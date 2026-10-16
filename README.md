@@ -2,7 +2,7 @@
 
 <p align="center">
   <picture>
-    <img alt="AxAudio" src="assets/img/logo.svg" width="300">
+    <img alt="AxAudio" src="assets/img/logo.svg">
   </picture>
 </p>
 
