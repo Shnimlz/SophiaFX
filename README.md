@@ -1,6 +1,10 @@
 <div align="center">
 
-# ⚡ SophiaFX
+<p align="center">
+  <picture>
+    <img alt="AxAudio" src="assets/img/logo.svg" width="300">
+  </picture>
+</p>
 
 **Ultra-lightweight, high-performance TypeScript client and orchestrator for [axAudio](https://github.com/Shnimlz/axAudio) Discord audio engines.**
 
@@ -35,7 +39,8 @@ A modern, type-safe alternative to Shoukaku designed specifically for axAudio's 
 npm install sophiafx
 ```
 
-*(Optional peer dependency for Discord.js bots)*:
+_(Optional peer dependency for Discord.js bots)_:
+
 ```bash
 npm install discord.js
 ```
@@ -45,15 +50,15 @@ npm install discord.js
 ## 🚀 Quick Start (Discord.js v14)
 
 ```typescript
-import { Client, GatewayIntentBits } from 'discord.js';
-import { SophiaFX, DiscordJSConnector } from 'sophiafx';
+import { Client, GatewayIntentBits } from "discord.js";
+import { SophiaFX, DiscordJSConnector } from "sophiafx";
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMessages
-  ]
+    GatewayIntentBits.GuildMessages,
+  ],
 });
 
 // Initialize SophiaFX orchestrator
@@ -61,50 +66,57 @@ const sophia = new SophiaFX(
   new DiscordJSConnector(client),
   [
     {
-      name: 'main-vps',
-      url: 'http://127.0.0.1:2333',
-      autoReconnect: true
-    }
+      name: "main-vps",
+      url: "http://127.0.0.1:2333",
+      autoReconnect: true,
+    },
   ],
-  { defaultSearchSource: 'youtube' }
+  { defaultSearchSource: "youtube" },
 );
 
 // Cluster node lifecycle events
-sophia.on('ready', (nodeName) => {
+sophia.on("ready", (nodeName) => {
   console.log(`🔌 axAudio node '${nodeName}' connected and ready.`);
 });
 
-sophia.on('trackStart', (player, track) => {
+sophia.on("trackStart", (player, track) => {
   console.log(`🎶 [Guild ${player.guildId}] Now playing: ${track.title}`);
 });
 
-sophia.on('trackEnd', (player, track, reason) => {
-  console.log(`⏹️ [Guild ${player.guildId}] Track finished: ${track?.title} (${reason})`);
+sophia.on("trackEnd", (player, track, reason) => {
+  console.log(
+    `⏹️ [Guild ${player.guildId}] Track finished: ${track?.title} (${reason})`,
+  );
 });
 
-sophia.on('trackError', (player, track, error) => {
-  console.error(`❌ [Guild ${player.guildId}] Error playing ${track?.title}: ${error}`);
+sophia.on("trackError", (player, track, error) => {
+  console.error(
+    `❌ [Guild ${player.guildId}] Error playing ${track?.title}: ${error}`,
+  );
 });
 
-client.on('interactionCreate', async (interaction) => {
+client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const { commandName, guildId, member } = interaction;
   const voiceChannel = (member as any)?.voice?.channel;
 
-  if (commandName === 'play') {
+  if (commandName === "play") {
     if (!voiceChannel) {
-      await interaction.reply({ content: 'You must be in a voice channel!', ephemeral: true });
+      await interaction.reply({
+        content: "You must be in a voice channel!",
+        ephemeral: true,
+      });
       return;
     }
 
     await interaction.deferReply();
-    const query = interaction.options.getString('query', true);
+    const query = interaction.options.getString("query", true);
 
     // Join voice and retrieve player
     const player = await sophia.join({
       guildId: guildId!,
-      channelId: voiceChannel.id
+      channelId: voiceChannel.id,
     });
 
     // Enqueue track or playlist in axAudio
@@ -113,36 +125,36 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.editReply({
       content: result.is_playlist
         ? `📜 **Enqueued playlist**: ${result.playlist_title || result.title} (${result.playlist_tracks_count} tracks)`
-        : `▶️ **Now playing**: [${result.title}](${result.source_url})`
+        : `▶️ **Now playing**: [${result.title}](${result.source_url})`,
     });
   }
 
-  if (commandName === 'pause') {
+  if (commandName === "pause") {
     const player = sophia.getPlayer(guildId!);
     await player?.pause();
-    await interaction.reply('⏸️ Playback paused.');
+    await interaction.reply("⏸️ Playback paused.");
   }
 
-  if (commandName === 'resume') {
+  if (commandName === "resume") {
     const player = sophia.getPlayer(guildId!);
     await player?.resume();
-    await interaction.reply('▶️ Playback resumed.');
+    await interaction.reply("▶️ Playback resumed.");
   }
 
-  if (commandName === 'skip') {
+  if (commandName === "skip") {
     const player = sophia.getPlayer(guildId!);
     await player?.skip();
-    await interaction.reply('⏭️ Track skipped.');
+    await interaction.reply("⏭️ Track skipped.");
   }
 
-  if (commandName === 'leave') {
+  if (commandName === "leave") {
     const player = sophia.getPlayer(guildId!);
     await player?.disconnect();
-    await interaction.reply('🚪 Disconnected from voice channel.');
+    await interaction.reply("🚪 Disconnected from voice channel.");
   }
 });
 
-client.login('YOUR_DISCORD_BOT_TOKEN');
+client.login("YOUR_DISCORD_BOT_TOKEN");
 ```
 
 ---
@@ -155,7 +167,7 @@ axAudio features hardware-grade 48 kHz digital signal processing (DSP). SophiaFX
 
 ```typescript
 // Calibrated presets: 'music', 'cinema-3d', 'bass-boost-3d', 'vocal-clarity', 'gaming-3d', 'concert-hall', 'flat'
-await player.setPreset('cinema-3d');
+await player.setPreset("cinema-3d");
 ```
 
 ### 2. Configure 15-Band Graphic Equalizer
@@ -166,7 +178,7 @@ Standard ISO center frequencies: `25Hz, 40Hz, 63Hz, 100Hz, 160Hz, 250Hz, 400Hz, 
 await player.setEqualizer([
   { band: 0, gain: 4.5 }, // 25 Hz sub-bass (+4.5 dB)
   { band: 1, gain: 3.0 }, // 40 Hz punch (+3.0 dB)
-  { band: 8, gain: 1.5 }  // 1 kHz vocal presence (+1.5 dB)
+  { band: 8, gain: 1.5 }, // 1 kHz vocal presence (+1.5 dB)
 ]);
 ```
 
@@ -174,11 +186,11 @@ await player.setEqualizer([
 
 ```typescript
 await player.setSpatial({
-  stereo_width: 1.35,        // Mid/Side stereo expansion (1.0 = normal, 1.35 = 3D immersive)
-  binaural_crossfeed: true,  // Head-shadow delay at 700 Hz (reduces headphone fatigue)
-  crossfeed_level: 0.18,     // Acoustic bleed mix level (0.0 to 0.40)
-  bass_exciter: true,        // Harmonic sub-bass exciter at 85 Hz
-  bass_exciter_drive: 0.35   // Saturation harmonic intensity
+  stereo_width: 1.35, // Mid/Side stereo expansion (1.0 = normal, 1.35 = 3D immersive)
+  binaural_crossfeed: true, // Head-shadow delay at 700 Hz (reduces headphone fatigue)
+  crossfeed_level: 0.18, // Acoustic bleed mix level (0.0 to 0.40)
+  bass_exciter: true, // Harmonic sub-bass exciter at 85 Hz
+  bass_exciter_drive: 0.35, // Saturation harmonic intensity
 });
 ```
 
@@ -196,9 +208,9 @@ Resolve URLs or query tracks without enqueueing them immediately:
 
 ```typescript
 // Search YouTube or SoundCloud
-const results = await sophia.search('Daft Punk Get Lucky', {
-  source: 'youtube',
-  limit: 5
+const results = await sophia.search("Daft Punk Get Lucky", {
+  source: "youtube",
+  limit: 5,
 });
 
 for (const track of results.tracks) {
@@ -206,7 +218,9 @@ for (const track of results.tracks) {
 }
 
 // Direct URL metadata and CDN stream resolution
-const resolved = await sophia.resolve('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+const resolved = await sophia.resolve(
+  "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+);
 console.log(`Direct CDN stream URL: ${resolved.stream_url}`);
 ```
 
@@ -217,23 +231,35 @@ console.log(`Direct CDN stream URL: ${resolved.stream_url}`);
 If your Discord bot runs in decoupled services where Discord Gateway packets arrive via Kafka, RabbitMQ, or NATS:
 
 ```typescript
-import { SophiaFX, RawConnector } from 'sophiafx';
+import { SophiaFX, RawConnector } from "sophiafx";
 
 const connector = new RawConnector({
-  botId: '123456789012345678',
+  botId: "123456789012345678",
   sendVoiceUpdate: (guildId, channelId, selfMute, selfDeaf) => {
     // Forward OpCode 4 payload to your message broker or shard cluster
-    rabbitChannel.sendToQueue('gateway_outbound', Buffer.from(JSON.stringify({
-      op: 4,
-      d: { guild_id: guildId, channel_id: channelId, self_mute: selfMute, self_deaf: selfDeaf }
-    })));
-  }
+    rabbitChannel.sendToQueue(
+      "gateway_outbound",
+      Buffer.from(
+        JSON.stringify({
+          op: 4,
+          d: {
+            guild_id: guildId,
+            channel_id: channelId,
+            self_mute: selfMute,
+            self_deaf: selfDeaf,
+          },
+        }),
+      ),
+    );
+  },
 });
 
-const sophia = new SophiaFX(connector, [{ name: 'axaudio', url: 'http://axaudio:2333' }]);
+const sophia = new SophiaFX(connector, [
+  { name: "axaudio", url: "http://axaudio:2333" },
+]);
 
 // Feed raw gateway packets into the connector when received from broker
-brokerConsumer.on('message', (msg) => {
+brokerConsumer.on("message", (msg) => {
   const packet = JSON.parse(msg.content.toString());
   connector.forwardRawPacket(packet);
 });
