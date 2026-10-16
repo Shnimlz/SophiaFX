@@ -1,0 +1,126 @@
+name: Build, Version & Publish SophiaFX
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+    inputs:
+      version_strategy:
+        description: 'Estrategia de versión'
+        required: true
+        default: 'commit_count'
+        type: choice
+        options:
+          - commit_count
+          - patch
+          - minor
+          - major
+          - custom
+      custom_version:
+        description: 'Versión personalizada (solo si la estrategia es "custom")'
+        required: false
+        default: ''
+        type: string
+      publish_npm:
+        description: 'Publicar en el registro de npm'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  build-version-publish:
+    name: Build, Version, Release & Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Quality Checks
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+
+      - name: Compute Semantic Version
+        id: meta_version
+        run: |
+          STRATEGY="${{ github.event.inputs.version_strategy || 'commit_count' }}"
+          CUSTOM="${{ github.event.inputs.custom_version || '' }}"
+
+          if [ "$STRATEGY" = "custom" ] && [ -n "$CUSTOM" ]; then
+            npm version "$CUSTOM" --no-git-tag-version --allow-same-version
+          elif [ "$STRATEGY" = "patch" ]; then
+            npm version patch --no-git-tag-version
+          elif [ "$STRATEGY" = "minor" ]; then
+            npm version minor --no-git-tag-version
+          elif [ "$STRATEGY" = "major" ]; then
+            npm version major --no-git-tag-version
+          else
+            # Estilo axAudio: BASE_MAJOR_MINOR.<COMMITS>
+            BASE_PREFIX=$(node -p "require('./package.json').version.split('.').slice(0, 2).join('.')")
+            COMMITS=$(git rev-list --count HEAD)
+            COMPUTED_VERSION="${BASE_PREFIX}.${COMMITS}"
+            npm version "$COMPUTED_VERSION" --no-git-tag-version --allow-same-version
+          fi
+
+          FINAL_VERSION=$(node -p "require('./package.json').version")
+          TAG="v${FINAL_VERSION}"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
+          echo "version=${FINAL_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "=== Releasing SophiaFX version: ${FINAL_VERSION} (${SHORT_SHA}) ==="
+
+      - name: Build TypeScript bundle
+        run: npm run build
+
+      - name: Commit version bump
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet package.json; then
+            git add package.json package-lock.json
+            git commit -m "chore(release): v${{ steps.meta_version.outputs.version }} [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "package.json unchanged, skipping commit."
+          fi
+
+      - name: Publish to npm
+        if: ${{ github.event.inputs.publish_npm != 'false' }}
+        run: |
+          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+            npm publish --access public
+          else
+            echo "::warning::NPM_TOKEN secret is not configured in repository. Skipping npm publish."
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create Git Tag & GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta_version.outputs.tag }}
+          name: "SophiaFX v${{ steps.meta_version.outputs.version }}"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
