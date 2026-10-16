@@ -69,12 +69,13 @@ export class Player extends EventEmitter {
    * Connects the player to a Discord voice channel using the gateway and Songbird driver.
    */
   public async connect(channelId: string, options: ConnectOptions = {}): Promise<void> {
+    // If the player is already connected to this channel, preserve the active stream
+    if (this.channelId === channelId) {
+      return;
+    }
+
     const timeoutMs = options.timeoutMs ?? 15000;
     const botId = this.sophia.connector.getBotId();
-
-    // Preventive reset: enforce voice leave to renew Discord handshakes upon reconnect
-    this.sophia.connector.sendVoiceUpdate(this.guildId, null, false, false);
-    await new Promise((r) => setTimeout(r, 250));
 
     const voiceInfo = await new Promise<PendingVoiceInfo>((resolve, reject) => {
       const timer = setTimeout(() => {

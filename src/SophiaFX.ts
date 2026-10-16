@@ -190,6 +190,11 @@ export class SophiaFX extends EventEmitter {
    * Connects to a voice channel and returns a player ready to stream audio.
    */
   public async join(options: JoinVoiceOptions): Promise<Player> {
+    const existingPlayer = this.players.get(options.guildId);
+    if (existingPlayer && existingPlayer.channelId === options.channelId) {
+      return existingPlayer;
+    }
+
     const player = this.createPlayer(options.guildId, options.nodeName);
     await player.connect(options.channelId, {
       selfMute: options.selfMute,
