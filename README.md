@@ -1,53 +1,52 @@
 <div align="center">
 
-<p align="center">
-  <picture>
-    <img alt="AxAudio" src="assets/img/logo.svg">
-  </picture>
-</p>
+<img alt="SophiaFX" src="assets/img/logo.svg">
 
-**Ultra-lightweight, high-performance TypeScript client and orchestrator for [axAudio](https://github.com/Shnimlz/axAudio) Discord audio engines.**
+
+**Cliente y orquestador TypeScript, ultraligero y de alto rendimiento, para los motores de audio de Discord [axAudio](https://github.com/Shnimlz/axAudio).**
 
 [![npm version](https://img.shields.io/npm/v/sophiafx.svg?style=flat&color=3178c6)](https://www.npmjs.com/package/sophiafx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7%2B-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-A modern, type-safe alternative to Shoukaku designed specifically for axAudio's sub-millisecond native Rust audio pipeline, 15-band studio DSP equalizer, and real-time WebSocket telemetry.
+Una alternativa moderna y con tipado seguro a Shoukaku, diseñada para el pipeline de audio nativo en Rust de axAudio: latencia submilisegundo, ecualizador DSP de 15 bandas y telemetría en tiempo real por WebSocket.
+
+[Instalación](#instalación) · [Inicio rápido](#inicio-rápido) · [DSP y ecualización](#dsp-y-ecualización) · [Búsqueda](#búsqueda-y-resolución-de-pistas) · [Eventos](#eventos) · [Raw Connector](#raw-connector)
 
 </div>
 
----
+## Características
 
-## ✨ Features
+- **Hecho a medida para axAudio**: bindings directos al plano de control REST y al driver Songbird RTP a 50 Hz.
+- **DSP de estudio y ecualizador de 15 bandas**: ecualización en tiempo real, ensanchamiento espacial Mid/Side con coherencia de fase, crossfeed acústico y exciter de sub-graves.
+- **Clustering multinodo con failover automático**: varios nodos axAudio distribuidos, ruteo al nodo con menor carga y migración transparente de reproductores cuando un nodo cae.
+- **Conectores intercambiables**: `DiscordJSConnector` (Discord.js v14+) y `RawConnector` (agnóstico, ideal para microservicios, RabbitMQ o Kafka).
+- **Telemetría en tiempo real**: suscripción WebSocket a `/v1/events` con keep-alive, ping/pong y reconexión con backoff.
+- **Playlists de arranque rápido**: la cola se carga en segundo plano mientras la primera pista ya está sonando.
+- **Cero dependencias nativas**: TypeScript puro y librerías estándar de Node.js, sin compilación ni binarios por plataforma.
 
-- 🦀 **Purpose-Built for axAudio**: Direct native bindings to axAudio's REST control plane and 50 Hz RTP Songbird driver.
-- 🎛️ **Studio DSP & 15-Band Equalizer**: Built-in methods for real-time 15-band equalization, Mid/Side phase-coherent 3D spatial widening, acoustic crossfeed, and sub-bass exciter manipulation.
-- 🌐 **Multi-Node Clustering & Auto-Failover**: Support for multiple distributed axAudio nodes with least-loaded automatic routing and seamless player migration upon node drop.
-- 🔌 **Pluggable Framework Connectors**:
-  - `DiscordJSConnector` (Discord.js v14+)
-  - `RawConnector` (Agnostic / Microservices / RabbitMQ / Kafka)
-- 📡 **Real-Time Telemetry Stream**: WebSocket subscriber for `/v1/events` (`trackStart`, `trackEnd`, `trackError`) with automated keep-alive, ping/pong, and reconnection backoff.
-- 🚀 **Fast-Start Playlist Support**: Handles asynchronous background playlist queues while track 1 begins streaming immediately.
-- 📦 **Zero Native Dependencies**: Pure TypeScript and standard Node.js libraries—no heavy compilation steps or platform-specific binaries.
+## Requisitos
 
----
+- Node.js 18 o superior
+- Un nodo [axAudio](https://github.com/Shnimlz/axAudio) accesible por HTTP
+- `discord.js` v14+ solo si usas `DiscordJSConnector`
 
-## 📦 Installation
+## Instalación
 
 ```bash
 npm install sophiafx
 ```
 
-_(Optional peer dependency for Discord.js bots)_:
+Dependencia opcional para bots con Discord.js:
 
 ```bash
 npm install discord.js
 ```
 
----
+## Inicio rápido
 
-## 🚀 Quick Start (Discord.js v14)
+Ejemplo completo con Discord.js v14:
 
 ```typescript
 import { Client, GatewayIntentBits } from "discord.js";
@@ -61,7 +60,7 @@ const client = new Client({
   ],
 });
 
-// Initialize SophiaFX orchestrator
+// Inicializa el orquestador
 const sophia = new SophiaFX(
   new DiscordJSConnector(client),
   [
@@ -74,24 +73,24 @@ const sophia = new SophiaFX(
   { defaultSearchSource: "youtube" },
 );
 
-// Cluster node lifecycle events
+// Eventos del ciclo de vida del cluster
 sophia.on("ready", (nodeName) => {
-  console.log(`🔌 axAudio node '${nodeName}' connected and ready.`);
+  console.log(`Nodo axAudio '${nodeName}' conectado y listo.`);
 });
 
 sophia.on("trackStart", (player, track) => {
-  console.log(`🎶 [Guild ${player.guildId}] Now playing: ${track.title}`);
+  console.log(`[Guild ${player.guildId}] Reproduciendo: ${track.title}`);
 });
 
 sophia.on("trackEnd", (player, track, reason) => {
   console.log(
-    `⏹️ [Guild ${player.guildId}] Track finished: ${track?.title} (${reason})`,
+    `[Guild ${player.guildId}] Pista terminada: ${track?.title} (${reason})`,
   );
 });
 
 sophia.on("trackError", (player, track, error) => {
   console.error(
-    `❌ [Guild ${player.guildId}] Error playing ${track?.title}: ${error}`,
+    `[Guild ${player.guildId}] Error en ${track?.title}: ${error}`,
   );
 });
 
@@ -104,7 +103,7 @@ client.on("interactionCreate", async (interaction) => {
   if (commandName === "play") {
     if (!voiceChannel) {
       await interaction.reply({
-        content: "You must be in a voice channel!",
+        content: "¡Debes estar en un canal de voz!",
         ephemeral: true,
       });
       return;
@@ -113,101 +112,106 @@ client.on("interactionCreate", async (interaction) => {
     await interaction.deferReply();
     const query = interaction.options.getString("query", true);
 
-    // Join voice and retrieve player
+    // Entra al canal de voz y obtiene el reproductor
     const player = await sophia.join({
       guildId: guildId!,
       channelId: voiceChannel.id,
     });
 
-    // Enqueue track or playlist in axAudio
+    // Encola una pista o playlist en axAudio
     const result = await player.play(query);
 
     await interaction.editReply({
       content: result.is_playlist
-        ? `📜 **Enqueued playlist**: ${result.playlist_title || result.title} (${result.playlist_tracks_count} tracks)`
-        : `▶️ **Now playing**: [${result.title}](${result.source_url})`,
+        ? `Playlist en cola: **${result.playlist_title || result.title}** (${result.playlist_tracks_count} pistas)`
+        : `Reproduciendo: [${result.title}](${result.source_url})`,
     });
   }
 
   if (commandName === "pause") {
-    const player = sophia.getPlayer(guildId!);
-    await player?.pause();
-    await interaction.reply("⏸️ Playback paused.");
+    await sophia.getPlayer(guildId!)?.pause();
+    await interaction.reply("Reproducción pausada.");
   }
 
   if (commandName === "resume") {
-    const player = sophia.getPlayer(guildId!);
-    await player?.resume();
-    await interaction.reply("▶️ Playback resumed.");
+    await sophia.getPlayer(guildId!)?.resume();
+    await interaction.reply("Reproducción reanudada.");
   }
 
   if (commandName === "skip") {
-    const player = sophia.getPlayer(guildId!);
-    await player?.skip();
-    await interaction.reply("⏭️ Track skipped.");
+    await sophia.getPlayer(guildId!)?.skip();
+    await interaction.reply("Pista omitida.");
   }
 
   if (commandName === "leave") {
-    const player = sophia.getPlayer(guildId!);
-    await player?.disconnect();
-    await interaction.reply("🚪 Disconnected from voice channel.");
+    await sophia.getPlayer(guildId!)?.disconnect();
+    await interaction.reply("Desconectado del canal de voz.");
   }
 });
 
 client.login("YOUR_DISCORD_BOT_TOKEN");
 ```
 
----
+## DSP y ecualización
 
-## 🎛️ DSP & Studio Equalization
+axAudio incluye procesamiento digital de señal (DSP) de grado profesional a 48 kHz. SophiaFX expone control programático sobre todos los parámetros acústicos.
 
-axAudio features hardware-grade 48 kHz digital signal processing (DSP). SophiaFX gives you programmatic control over all acoustic parameters:
+### Presets calibrados
 
-### 1. Apply Calibrated Acoustic Presets
+| Preset | Uso recomendado |
+| --- | --- |
+| `music` | Escucha general de música |
+| `cinema-3d` | Películas y contenido con sensación envolvente |
+| `bass-boost-3d` | Énfasis en graves con ensanchamiento espacial |
+| `vocal-clarity` | Voces, podcasts y streams hablados |
+| `gaming-3d` | Posicionamiento espacial para juegos |
+| `concert-hall` | Ambiente de sala de conciertos |
+| `flat` | Respuesta plana y transparente |
 
 ```typescript
-// Calibrated presets: 'music', 'cinema-3d', 'bass-boost-3d', 'vocal-clarity', 'gaming-3d', 'concert-hall', 'flat'
 await player.setPreset("cinema-3d");
 ```
 
-### 2. Configure 15-Band Graphic Equalizer
+### Ecualizador gráfico de 15 bandas
 
-Standard ISO center frequencies: `25Hz, 40Hz, 63Hz, 100Hz, 160Hz, 250Hz, 400Hz, 630Hz, 1kHz, 1.6kHz, 2.5kHz, 4kHz, 6.3kHz, 10kHz, 16kHz`.
+Las bandas usan las frecuencias centrales estándar ISO:
+
+| Banda | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Hz | 25 | 40 | 63 | 100 | 160 | 250 | 400 | 630 | 1k | 1.6k | 2.5k | 4k | 6.3k | 10k | 16k |
 
 ```typescript
 await player.setEqualizer([
-  { band: 0, gain: 4.5 }, // 25 Hz sub-bass (+4.5 dB)
-  { band: 1, gain: 3.0 }, // 40 Hz punch (+3.0 dB)
-  { band: 8, gain: 1.5 }, // 1 kHz vocal presence (+1.5 dB)
+  { band: 0, gain: 4.5 }, // 25 Hz, sub-graves (+4.5 dB)
+  { band: 1, gain: 3.0 }, // 40 Hz, punch (+3.0 dB)
+  { band: 8, gain: 1.5 }, // 1 kHz, presencia vocal (+1.5 dB)
 ]);
 ```
 
-### 3. Real-Time 3D Spatial Acoustic Modeling
+### Modelado acústico espacial 3D
 
 ```typescript
 await player.setSpatial({
-  stereo_width: 1.35, // Mid/Side stereo expansion (1.0 = normal, 1.35 = 3D immersive)
-  binaural_crossfeed: true, // Head-shadow delay at 700 Hz (reduces headphone fatigue)
-  crossfeed_level: 0.18, // Acoustic bleed mix level (0.0 to 0.40)
-  bass_exciter: true, // Harmonic sub-bass exciter at 85 Hz
-  bass_exciter_drive: 0.35, // Saturation harmonic intensity
+  stereo_width: 1.35, // Expansión estéreo Mid/Side (1.0 = normal, 1.35 = inmersivo 3D)
+  binaural_crossfeed: true, // Retardo de sombra de cabeza a 700 Hz (reduce la fatiga con audífonos)
+  crossfeed_level: 0.18, // Nivel de mezcla del sangrado acústico (0.0 a 0.40)
+  bass_exciter: true, // Exciter armónico de sub-graves a 85 Hz
+  bass_exciter_drive: 0.35, // Intensidad de la saturación armónica
 });
 ```
 
-### 4. Reset to Flat Transparent Response
+### Restablecer a respuesta plana
 
 ```typescript
 await player.resetDsp();
 ```
 
----
+## Búsqueda y resolución de pistas
 
-## 🔍 Search and Track Resolution
-
-Resolve URLs or query tracks without enqueueing them immediately:
+Resuelve URLs o consulta pistas sin encolarlas de inmediato:
 
 ```typescript
-// Search YouTube or SoundCloud
+// Búsqueda en YouTube o SoundCloud
 const results = await sophia.search("Daft Punk Get Lucky", {
   source: "youtube",
   limit: 5,
@@ -217,18 +221,27 @@ for (const track of results.tracks) {
   console.log(`${track.title} - ${track.url} (${track.duration_secs}s)`);
 }
 
-// Direct URL metadata and CDN stream resolution
+// Metadatos de una URL y resolución del stream directo del CDN
 const resolved = await sophia.resolve(
   "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 );
-console.log(`Direct CDN stream URL: ${resolved.stream_url}`);
+console.log(`URL directa del CDN: ${resolved.stream_url}`);
 ```
 
----
+## Eventos
 
-## 🏗️ Raw Connector (Microservices / Distributed Architecture)
+SophiaFX emite los eventos del cluster y de la telemetría de axAudio (`/v1/events`):
 
-If your Discord bot runs in decoupled services where Discord Gateway packets arrive via Kafka, RabbitMQ, or NATS:
+| Evento | Argumentos | Descripción |
+| --- | --- | --- |
+| `ready` | `nodeName` | Un nodo se conectó y está listo |
+| `trackStart` | `player, track` | Empezó una pista |
+| `trackEnd` | `player, track, reason` | Terminó una pista, con el motivo |
+| `trackError` | `player, track, error` | Falló la reproducción de una pista |
+
+## Raw Connector
+
+Para bots de Discord desacoplados en servicios, donde los paquetes del Gateway llegan por Kafka, RabbitMQ o NATS:
 
 ```typescript
 import { SophiaFX, RawConnector } from "sophiafx";
@@ -236,7 +249,7 @@ import { SophiaFX, RawConnector } from "sophiafx";
 const connector = new RawConnector({
   botId: "123456789012345678",
   sendVoiceUpdate: (guildId, channelId, selfMute, selfDeaf) => {
-    // Forward OpCode 4 payload to your message broker or shard cluster
+    // Reenvía el payload OpCode 4 a tu broker de mensajes o cluster de shards
     rabbitChannel.sendToQueue(
       "gateway_outbound",
       Buffer.from(
@@ -258,15 +271,13 @@ const sophia = new SophiaFX(connector, [
   { name: "axaudio", url: "http://axaudio:2333" },
 ]);
 
-// Feed raw gateway packets into the connector when received from broker
+// Entrega al conector los paquetes crudos del gateway que llegan del broker
 brokerConsumer.on("message", (msg) => {
   const packet = JSON.parse(msg.content.toString());
   connector.forwardRawPacket(packet);
 });
 ```
 
----
+## Licencia
 
-## 📄 License
-
-Licensed under the [MIT License](LICENSE). Created by **Shnimlz**.
+Distribuido bajo la [Licencia MIT](LICENSE). Creado por **Shnimlz**.
