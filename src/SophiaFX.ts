@@ -17,13 +17,13 @@ import type {
 
 export type SophiaFXOptions = {
   /**
-   * Proveedor de búsqueda por defecto.
+   * Default search provider for track queries.
    * @default 'auto'
    */
   defaultSearchSource?: 'auto' | 'youtube' | 'soundcloud';
 
   /**
-   * Mueve automáticamente los reproductores a otro nodo saludable si el nodo actual se desconecta.
+   * Automatically migrate active players to another healthy node when their current node disconnects.
    * @default true
    */
   moveOnDisconnect?: boolean;
@@ -39,7 +39,7 @@ export type JoinVoiceOptions = {
 };
 
 /**
- * Orquestador principal de nodos axAudio y reproductores de voz.
+ * Primary cluster orchestrator for axAudio nodes and voice players.
  */
 export class SophiaFX extends EventEmitter {
   public readonly connector: Connector;
@@ -56,23 +56,23 @@ export class SophiaFX extends EventEmitter {
       ...options
     };
 
-    // Registrar escucha de eventos del Gateway
+    // Listen to Discord Gateway packets forwarded by the connector
     this.connector.listen((packet: DiscordGatewayPacket) => {
       this.handleGatewayPacket(packet);
     });
 
-    // Inicializar nodos configurados
+    // Initialize all configured nodes
     for (const nodeOpt of nodes) {
       this.addNode(nodeOpt);
     }
   }
 
   /**
-   * Registra y conecta un nuevo nodo axAudio al cluster.
+   * Registers and connects a new axAudio node to the cluster.
    */
   public addNode(options: NodeOptions): Node {
     if (this.nodes.has(options.name)) {
-      throw new Error(`[SophiaFX] Ya existe un nodo con el nombre '${options.name}'`);
+      throw new Error(`[SophiaFX] A node named '${options.name}' already exists in the cluster`);
     }
 
     const node = new Node(options);
@@ -128,7 +128,7 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Desconecta y elimina un nodo del cluster.
+   * Disconnects and unregisters a node from the cluster.
    */
   public removeNode(name: string): void {
     const node = this.nodes.get(name);
@@ -140,14 +140,14 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Obtiene un nodo por nombre o selecciona el nodo saludable con menor carga de reproductores.
+   * Retrieves a node by name or selects the healthiest least-loaded node.
    */
   public getNode(name?: string): Node {
     if (name) {
       const target = this.nodes.get(name);
 
       if (!target) {
-        throw new Error(`[SophiaFX] Nodo axAudio '${name}' no encontrado en el cluster`);
+        throw new Error(`[SophiaFX] axAudio node '${name}' was not found in the cluster`);
       }
 
       return target;
@@ -156,10 +156,10 @@ export class SophiaFX extends EventEmitter {
     const connectedNodes = Array.from(this.nodes.values()).filter((n) => n.connected);
 
     if (connectedNodes.length === 0) {
-      throw new Error('[SophiaFX] No hay nodos axAudio conectados y saludables en este momento');
+      throw new Error('[SophiaFX] No healthy axAudio nodes are currently connected');
     }
 
-    // Algoritmo de menor carga: menor cantidad de active_players o players locales
+    // Least-loaded routing: prioritize nodes with fewest active players
     connectedNodes.sort((a, b) => {
       const countA = a.stats?.active_players ?? 0;
       const countB = b.stats?.active_players ?? 0;
@@ -171,7 +171,7 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Crea o recupera un reproductor existente para el guild indicado.
+   * Creates or retrieves an existing player for the given guild ID.
    */
   public createPlayer(guildId: string, nodeName?: string): Player {
     let player = this.players.get(guildId);
@@ -187,7 +187,7 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Conecta a un canal de voz y retorna el reproductor listo para usar.
+   * Connects to a voice channel and returns a player ready to stream audio.
    */
   public async join(options: JoinVoiceOptions): Promise<Player> {
     const player = this.createPlayer(options.guildId, options.nodeName);
@@ -201,14 +201,14 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Obtiene el reproductor activo de un guild si existe.
+   * Retrieves the active player for a guild, if one exists.
    */
   public getPlayer(guildId: string): Player | undefined {
     return this.players.get(guildId);
   }
 
   /**
-   * Elimina un reproductor del registro local.
+   * Destroys and removes a player from the local registry.
    */
   public destroyPlayer(guildId: string): void {
     const player = this.players.get(guildId);
@@ -220,7 +220,7 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Busca pistas en YouTube o SoundCloud a través del mejor nodo disponible.
+   * Searches for tracks across YouTube or SoundCloud using the best available node.
    */
   public async search(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
     const node = this.getNode();
@@ -232,7 +232,7 @@ export class SophiaFX extends EventEmitter {
   }
 
   /**
-   * Resuelve una URL individual sin encolarla.
+   * Resolves a single track URL directly without enqueuing it.
    */
   public async resolve(query: string, options: Partial<PlayOptions> = {}): Promise<Track> {
     const node = this.getNode();
@@ -271,12 +271,12 @@ export class SophiaFX extends EventEmitter {
         }
       }
     } catch {
-      // Si no hay nodos de respaldo disponibles, esperar reconexión del propio nodo
+      // If no fallback node is available, await reconnection of the primary node
     }
   }
 
   /**
-   * Destruye todos los reproductores y desconecta todos los nodos.
+   * Destroys all active players and disconnects all nodes.
    */
   public destroy(): void {
     for (const player of this.players.values()) {
@@ -296,5 +296,5 @@ export class SophiaFX extends EventEmitter {
   }
 }
 
-// Alias conveniente
+// Convenient alias
 export const Sophia = SophiaFX;

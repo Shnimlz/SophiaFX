@@ -1,5 +1,5 @@
 /**
- * Metadatos de una pista de audio en axAudio.
+ * Metadata representing an audio track in axAudio.
  */
 export type Track = {
   title: string;
@@ -11,7 +11,7 @@ export type Track = {
 };
 
 /**
- * Elemento plano de una lista de reproducción en proceso de carga.
+ * Flat representation of a playlist item during fast-start asynchronous loading.
  */
 export type FlatPlaylistItem = {
   title: string;
@@ -22,46 +22,46 @@ export type FlatPlaylistItem = {
 };
 
 /**
- * Opciones para encolar o reproducir una pista en axAudio.
+ * Options for enqueueing or playing an audio track or playlist in axAudio.
  */
 export type PlayOptions = {
   /**
-   * Volumen inicial del reproductor (0.0 a 2.0).
+   * Initial volume for playback (0.0 to 2.0).
    * @default 1.0
    */
   volume?: number;
 
   /**
-   * Si es true, detiene inmediatamente la pista activa, cancela trabajadores
-   * de playlist en segundo plano y reemplaza la cola completa.
+   * If true, stops the active track immediately, aborts background playlist fetchers,
+   * and replaces the entire queue.
    * @default false
    */
   replace?: boolean;
 
   /**
-   * Argumentos de extractor para yt-dlp (ej: 'youtube:player_client=web_creator').
+   * Extractor arguments forwarded to yt-dlp (e.g. 'youtube:player_client=web_creator').
    */
   extractor_args?: string;
 
   /**
-   * Argumentos CLI adicionales para yt-dlp.
+   * Additional CLI arguments passed to yt-dlp.
    */
   extra_args?: string;
 
   /**
-   * Ruta explícita a un archivo de cookies Netscape.
+   * Explicit path to a Netscape cookies text file.
    */
   cookies?: string;
 
   /**
-   * Selector de formato yt-dlp (ej: 'ba[format_id=251]/bestaudio').
+   * Custom format selector for yt-dlp (e.g. 'ba[format_id=251]/bestaudio').
    */
   format?: string;
 };
 
 /**
- * Respuesta devuelta por axAudio tras invocar /v1/player/play.
- * Compone el tipo base Track con metadatos específicos del lote de reproducción.
+ * Response returned by axAudio from /v1/player/play.
+ * Composes the base Track type with batch and playlist telemetry.
  */
 export type PlayResponse = Track & {
   is_playlist: boolean;
@@ -72,7 +72,7 @@ export type PlayResponse = Track & {
 };
 
 /**
- * Representación del estado de la cola de reproducción en un guild.
+ * Queue and playback status for a Discord guild.
  */
 export type QueueResponse = {
   guild_id: string;
@@ -83,12 +83,12 @@ export type QueueResponse = {
 };
 
 /**
- * Acciones de control inmediato de reproducción en /v1/player/control.
+ * Immediate player control operations for /v1/player/control.
  */
 export type ControlAction = 'pause' | 'resume' | 'stop' | 'skip' | 'clear' | 'volume';
 
 /**
- * Credenciales de Discord Voice Gateway requeridas para el handshake del driver.
+ * Discord Voice Gateway credentials required for the Songbird UDP driver handshake.
  */
 export type VoiceConnectionInfo = {
   guild_id: string;

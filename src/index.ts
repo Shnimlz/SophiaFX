@@ -9,12 +9,22 @@ export { Node, type NodeEvents } from './Node.js';
 
 export { Player, type ConnectOptions } from './Player.js';
 
-// Conectores
-export { Connector, type DiscordGatewayPacket } from './connectors/Connector.js';
+// Connectors
+export {
+  Connector,
+  isVoiceStatePacket,
+  isVoiceServerPacket,
+  type DiscordGatewayPacket,
+  type VoiceStateUpdatePacket,
+  type VoiceServerUpdatePacket
+} from './connectors/Connector.js';
 
-export { DiscordJSConnector } from './connectors/DiscordJSConnector.js';
+export {
+  DiscordJSConnector,
+  type DiscordClientLike
+} from './connectors/DiscordJSConnector.js';
 
 export { RawConnector, type RawConnectorOptions } from './connectors/RawConnector.js';
 
-// Tipos
+// Types
 export * from './types/index.js';

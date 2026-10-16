@@ -1,44 +1,44 @@
 /**
- * Configuración de un nodo axAudio.
+ * Configuration options for an axAudio voice node.
  */
 export type NodeOptions = {
   /**
-   * Identificador único o etiqueta para este nodo (ej: 'local-node', 'us-vps').
+   * Unique identifier or label for this node (e.g. 'local-node', 'us-vps').
    */
   name: string;
 
   /**
-   * URL HTTP base del nodo axAudio (ej: 'http://127.0.0.1:2333' o 'http://100.108.121.22:3000').
+   * Base HTTP URL of the axAudio node (e.g. 'http://127.0.0.1:2333').
    */
   url: string;
 
   /**
-   * Intenta reconectar automáticamente si el socket WebSocket se interrumpe.
+   * Automatically attempt reconnection if the WebSocket connection drops.
    * @default true
    */
   autoReconnect?: boolean;
 
   /**
-   * Cantidad máxima de reintentos de reconexión antes de marcar el nodo como inactivo (-1 = infinito).
+   * Maximum reconnection attempts before giving up (-1 = infinite).
    * @default -1
    */
   reconnectAttempts?: number;
 
   /**
-   * Intervalo inicial de reconexión en milisegundos.
+   * Initial reconnection interval in milliseconds.
    * @default 3000
    */
   reconnectInterval?: number;
 
   /**
-   * Timeout en milisegundos para peticiones HTTP al nodo.
+   * Timeout in milliseconds for HTTP REST requests to the node.
    * @default 15000
    */
   requestTimeout?: number;
 };
 
 /**
- * Métricas de salud y rendimiento retornadas por /v1/stats.
+ * Health and telemetry metrics returned by /v1/stats.
  */
 export type NodeStats = {
   status: string;
@@ -48,7 +48,7 @@ export type NodeStats = {
 };
 
 /**
- * Envoltorio estándar de respuesta de axAudio.
+ * Standard axAudio API response wrapper.
  */
 export type ApiResponse<T> = {
   success: boolean;

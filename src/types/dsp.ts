@@ -1,5 +1,5 @@
 /**
- * Frecuencias centrales ISO estándar para el ecualizador de 15 bandas.
+ * Standard ISO center frequencies for the 15-band graphic equalizer.
  */
 export const EQ_FREQUENCIES = [
   25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000
@@ -8,8 +8,8 @@ export const EQ_FREQUENCIES = [
 export type EqFrequency = (typeof EQ_FREQUENCIES)[number];
 
 /**
- * Configuración de ganancia para una banda individual (0 a 14).
- * Acepta dB directo (-15.0 a +15.0) o escala lineal de Lavalink (-0.5 a +1.0).
+ * Gain setting for an individual band index (0 to 14).
+ * Accepts direct dB (-15.0 to +15.0) or Lavalink linear gain scale (-0.5 to +1.0).
  */
 export type BandSetting = {
   band: number;
@@ -17,45 +17,45 @@ export type BandSetting = {
 };
 
 /**
- * Parámetros de modelado acústico 3D y psicoacústico en tiempo real.
+ * Real-time 3D acoustic modeling and psychoacoustic spatial parameters.
  */
 export type SpatialSettings = {
   /**
-   * Amplitud del campo estéreo Mid/Side:
-   * 0.0 (Mono), 1.0 (Normal / Neutro), 1.35 (Inmersión 3D estándar), 2.0 (Ultra Wide).
+   * Stereo field width of the Mid/Side matrix:
+   * 0.0 (Mono), 1.0 (Normal / Transparent), 1.35 (3D Immersion), 2.0 (Ultra-Wide).
    * @default 1.0
    */
   stereo_width?: number;
 
   /**
-   * Activa el crossfeed acústico natural (difracción de sombra craneal a 700Hz sin comb-filter).
-   * Reduce drásticamente la fatiga auditiva en auriculares.
+   * Enables head-shadow natural acoustic crossfeed (700Hz delay without comb filtering).
+   * Drastically reduces listening fatigue on headphones.
    * @default false
    */
   binaural_crossfeed?: boolean;
 
   /**
-   * Nivel de mezcla de crossfeed (0.0 a 0.40).
+   * Crossfeed blend level (0.0 to 0.40).
    * @default 0.18
    */
   crossfeed_level?: number;
 
   /**
-   * Activa el excitador armónico de subgraves (< 85Hz).
-   * Genera armónicos musicales cálidos para altavoces pequeños y auriculares.
+   * Enables sub-bass harmonic exciter (< 85Hz).
+   * Generates warm musical harmonics for headphones and compact speakers.
    * @default false
    */
   bass_exciter?: boolean;
 
   /**
-   * Intensidad de saturación armónica (0.0 a 1.0).
+   * Harmonic saturation drive intensity (0.0 to 1.0).
    * @default 0.35
    */
   bass_exciter_drive?: number;
 };
 
 /**
- * Presets de estudio calibrados de axAudio.
+ * Pre-calibrated studio acoustic presets in axAudio.
  */
 export type PresetName =
   | 'music'
@@ -67,7 +67,7 @@ export type PresetName =
   | 'flat';
 
 /**
- * Telemetría del estado actual del DSP.
+ * Telemetry representation of the current DSP engine state.
  */
 export type DspStatus = {
   active_preset: string | null;

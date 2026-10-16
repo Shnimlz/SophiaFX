@@ -23,7 +23,7 @@ export type DiscordClientLike = {
 };
 
 /**
- * Conector oficial para Discord.js v14+
+ * Official connector for Discord.js v14+ clients.
  */
 export class DiscordJSConnector extends Connector {
   private client: DiscordClientLike;
@@ -39,7 +39,7 @@ export class DiscordJSConnector extends Connector {
 
     if (!id) {
       throw new Error(
-        '[SophiaFX/DiscordJSConnector] client.user.id no está disponible. Asegúrate de inicializar tras client.login().'
+        '[SophiaFX/DiscordJSConnector] client.user.id is unavailable. Ensure you instantiate SophiaFX after client.login().'
       );
     }
 
@@ -70,7 +70,7 @@ export class DiscordJSConnector extends Connector {
       return;
     }
 
-    // Fallback buscando en la colección de shards del WS
+    // Fallback: search across the client WebSocket shards collection
     const shardSize = BigInt(this.client.ws?.shards?.size || 1);
     const shardId = Number((BigInt(guildId) >> 22n) % shardSize);
 
@@ -81,7 +81,7 @@ export class DiscordJSConnector extends Connector {
       shard.send(payload);
     } else {
       throw new Error(
-        `[SophiaFX/DiscordJSConnector] No se encontró un Shard activo para enviar voice update al guild ${guildId}`
+        `[SophiaFX/DiscordJSConnector] No active shard found to dispatch voice update for guild ${guildId}`
       );
     }
   }

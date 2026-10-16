@@ -40,16 +40,16 @@ export function isVoiceServerPacket(
 }
 
 /**
- * Interfaz base para conectar SophiaFX con cualquier cliente de Discord (discord.js, oceanic, eris o websocket raw).
+ * Base abstract connector to link SophiaFX with Discord clients (discord.js, oceanic, eris, or raw gateway connections).
  */
 export abstract class Connector extends EventEmitter {
   /**
-   * Obtiene el ID del bot conectado.
+   * Returns the connected bot client ID.
    */
   abstract getBotId(): string;
 
   /**
-   * Envía un paquete OpCode 4 a Discord Gateway para solicitar unirse o salir de voz.
+   * Dispatches an OpCode 4 voice state update packet to the Discord Gateway.
    */
   abstract sendVoiceUpdate(
     guildId: string,
@@ -59,12 +59,12 @@ export abstract class Connector extends EventEmitter {
   ): void;
 
   /**
-   * Inicializa la escucha de eventos raw del gateway.
+   * Subscribes to raw gateway packets forwarded by the Discord client.
    */
   abstract listen(callback: (packet: DiscordGatewayPacket) => void): void;
 
   /**
-   * Limpia los listeners asignados al cliente.
+   * Cleans up event listeners registered on the Discord client.
    */
   abstract destroy(): void;
 }

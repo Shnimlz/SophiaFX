@@ -40,7 +40,7 @@ type PendingHandshakeState = {
 };
 
 /**
- * Controlador de reproducción y audio en tiempo real para un Guild.
+ * Real-time audio and playback controller for a guild.
  */
 export class Player extends EventEmitter {
   public readonly sophia: SophiaFX;
@@ -55,7 +55,7 @@ export class Player extends EventEmitter {
   public queue: Track[] = [];
   public dspStatus: DspStatus | null = null;
 
-  // Manejo de promesa pendiente de handshake
+  // Pending voice handshake state
   private pendingVoiceHandshake: PendingHandshakeState | null = null;
 
   constructor(sophia: SophiaFX, node: Node, guildId: string) {
@@ -66,13 +66,13 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Conecta el reproductor a un canal de voz de Discord mediante el gateway y el driver Songbird.
+   * Connects the player to a Discord voice channel using the gateway and Songbird driver.
    */
   public async connect(channelId: string, options: ConnectOptions = {}): Promise<void> {
     const timeoutMs = options.timeoutMs ?? 15000;
     const botId = this.sophia.connector.getBotId();
 
-    // Reset preventivo: forzar salida previa para renovar handshakes en caso de reconexión
+    // Preventive reset: enforce voice leave to renew Discord handshakes upon reconnect
     this.sophia.connector.sendVoiceUpdate(this.guildId, null, false, false);
     await new Promise((r) => setTimeout(r, 250));
 
@@ -81,7 +81,7 @@ export class Player extends EventEmitter {
         this.pendingVoiceHandshake = null;
         reject(
           new Error(
-            `[SophiaFX/Player] Timeout (${timeoutMs}ms) esperando handshakes de voz de Discord (VOICE_SERVER_UPDATE)`
+            `[SophiaFX/Player] Timeout (${timeoutMs}ms) waiting for Discord voice handshakes (VOICE_SERVER_UPDATE)`
           )
         );
       }, timeoutMs);
@@ -92,7 +92,7 @@ export class Player extends EventEmitter {
         timer
       };
 
-      // Emitir OpCode 4 a Discord
+      // Emit OpCode 4 voice update to Discord Gateway
       this.sophia.connector.sendVoiceUpdate(
         this.guildId,
         channelId,
@@ -101,7 +101,7 @@ export class Player extends EventEmitter {
       );
     });
 
-    // Enviar credenciales a axAudio
+    // Forward voice credentials to axAudio
     await this.node.joinVoice({
       guild_id: this.guildId,
       channel_id: channelId,
@@ -115,7 +115,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Procesa paquetes raw de voz interceptados por el conector.
+   * Processes raw voice packets intercepted by the connector.
    * @internal
    */
   public handleRawVoicePacket(packet: DiscordGatewayPacket): void {
@@ -166,7 +166,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Encola y reproduce una canción o playlist en axAudio.
+   * Enqueues and plays a song or playlist in axAudio.
    */
   public async play(url: string, options: PlayOptions = {}): Promise<PlayResponse> {
     const res = await this.node.play(this.guildId, url, options);
@@ -181,7 +181,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Pausa la reproducción activa.
+   * Pauses active audio playback.
    */
   public async pause(): Promise<void> {
     await this.node.control(this.guildId, 'pause');
@@ -189,7 +189,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Reanuda la reproducción pausada.
+   * Resumes paused playback.
    */
   public async resume(): Promise<void> {
     await this.node.control(this.guildId, 'resume');
@@ -197,7 +197,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Detiene la reproducción, limpia la cola y cancela cargadores de playlists en segundo plano.
+   * Stops playback, clears the queue, and cancels background playlist loaders.
    */
   public async stop(): Promise<void> {
     await this.node.control(this.guildId, 'stop');
@@ -208,14 +208,14 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Salta a la siguiente pista inmediatamente.
+   * Skips to the next track immediately.
    */
   public async skip(): Promise<void> {
     await this.node.control(this.guildId, 'skip');
   }
 
   /**
-   * Vacía las pistas en cola conservando la canción que suena en este momento.
+   * Clears pending queued tracks while preserving the currently playing track.
    */
   public async clearQueue(): Promise<void> {
     await this.node.control(this.guildId, 'clear');
@@ -223,7 +223,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Ajusta el volumen del reproductor (0.0 a 2.0).
+   * Adjusts the player volume (0.0 to 2.0).
    */
   public async setVolume(volume: number): Promise<void> {
     const clamped = Math.max(0.0, Math.min(2.0, volume));
@@ -232,7 +232,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Consulta el estado de la cola sincronizado con axAudio.
+   * Queries the synchronized queue state from axAudio.
    */
   public async getQueue(): Promise<QueueResponse> {
     const res = await this.node.getQueue(this.guildId);
@@ -244,7 +244,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Aplica un preset acústico calibrado (ej: 'music', 'cinema-3d', 'bass-boost-3d').
+   * Applies a calibrated acoustic preset (e.g. 'music', 'cinema-3d', 'bass-boost-3d').
    */
   public async setPreset(preset: PresetName): Promise<DspResponse> {
     const res = await this.node.setEq(this.guildId, undefined, preset);
@@ -254,7 +254,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Configura ganancias personalizadas en el ecualizador gráfico de 15 bandas.
+   * Configures custom band gains on the 15-band graphic equalizer.
    */
   public async setEqualizer(bands: BandSetting[]): Promise<DspResponse> {
     const res = await this.node.setEq(this.guildId, bands);
@@ -264,7 +264,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Configura parámetros avanzados de procesamiento espacial 3D y psychoacoustics.
+   * Configures advanced 3D spatial widening and psychoacoustic parameters.
    */
   public async setSpatial(spatial: SpatialSettings): Promise<DspResponse> {
     const res = await this.node.setDsp(this.guildId, { spatial });
@@ -274,14 +274,14 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Restaura el ecualizador y el espacializador a modo plano / transparente (Flat).
+   * Resets the equalizer and spatializer to transparent (flat) response.
    */
   public async resetDsp(): Promise<DspResponse> {
     return this.setPreset('flat');
   }
 
   /**
-   * Desconecta al bot del canal de voz y destruye la instancia de este Player.
+   * Disconnects the bot from voice and destroys this Player instance.
    */
   public async disconnect(): Promise<void> {
     try {
@@ -303,7 +303,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Eventos internos emitidos desde el nodo axAudio.
+   * Internal events forwarded from the axAudio node.
    * @internal
    */
   public emitTrackStart(track: Track): void {

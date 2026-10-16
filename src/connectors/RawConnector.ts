@@ -11,7 +11,7 @@ export type RawConnectorOptions = {
 };
 
 /**
- * Conector agnóstico para bots con arquitecturas desacopladas o microservicios.
+ * Framework-agnostic connector for microservices, message brokers, or standalone gateway clients.
  */
 export class RawConnector extends Connector {
   private botId: string;
@@ -47,7 +47,7 @@ export class RawConnector extends Connector {
   }
 
   /**
-   * Alimenta un paquete crudo del Gateway (ej: proveniente de Kafka, RabbitMQ o WS directo).
+   * Forwards an incoming raw Discord Gateway packet (e.g. from Kafka, RabbitMQ, or custom WebSocket).
    */
   public forwardRawPacket(packet: DiscordGatewayPacket): void {
     if (this.listener) {

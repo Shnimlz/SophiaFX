@@ -28,7 +28,7 @@ export type NodeEvents = {
 };
 
 /**
- * Representa una conexión activa a un nodo de audio axAudio.
+ * Represents an active connection to an axAudio voice node.
  */
 export class Node extends EventEmitter {
   public readonly name: string;
@@ -49,7 +49,7 @@ export class Node extends EventEmitter {
     this.name = options.name;
     this.options = options;
 
-    // Normalizar URLs
+    // Normalize URLs
     let baseUrl = options.url.trim();
 
     if (baseUrl.endsWith('/')) {
@@ -64,7 +64,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Conecta al bus WebSocket /v1/events del nodo axAudio.
+   * Connects to the /v1/events WebSocket bus of the axAudio node.
    */
   public connect(): void {
     if (this.destroyed) return;
@@ -124,7 +124,7 @@ export class Node extends EventEmitter {
           break;
       }
     } catch {
-      // Ignorar mensajes malformados o no JSON
+      // Ignore malformed or non-JSON messages
     }
   }
 
@@ -165,7 +165,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Ejecuta una petición HTTP genérica al nodo axAudio.
+   * Executes a generic HTTP request against the axAudio node.
    */
   public async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const targetUrl = `${this.url}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
@@ -189,7 +189,7 @@ export class Node extends EventEmitter {
       const body = (await res.json().catch(() => ({
         success: false,
         data: null,
-        message: `HTTP ${res.status}: Respuesta no JSON de axAudio`
+        message: `HTTP ${res.status}: Non-JSON response from axAudio`
       }))) as ApiResponse<T>;
 
       if (!res.ok || !body.success) {
@@ -204,7 +204,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Obtiene telemetría y métricas del nodo axAudio.
+   * Fetches telemetry and resource metrics from the axAudio node.
    */
   public async fetchStats(): Promise<NodeStats> {
     const stats = await this.request<NodeStats>('/v1/stats', { method: 'GET' });
@@ -214,14 +214,14 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Realiza un healthcheck HTTP al nodo.
+   * Performs an HTTP health check on the node.
    */
   public async health(): Promise<string> {
     return this.request<string>('/health', { method: 'GET' });
   }
 
   /**
-   * Envía las credenciales de voz a axAudio para establecer la conexión UDP RTP de Songbird.
+   * Forwards voice credentials to axAudio to establish the Songbird UDP RTP stream.
    */
   public async joinVoice(voiceInfo: VoiceConnectionInfo): Promise<string> {
     return this.request<string>('/v1/voice/join', {
@@ -231,7 +231,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Desconecta el driver de voz y limpia la sesión del guild en el nodo.
+   * Disconnects the voice driver and clears the guild session on the node.
    */
   public async leaveVoice(guildId: string): Promise<string> {
     return this.request<string>('/v1/voice/leave', {
@@ -241,7 +241,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Encola y reproduce una pista o lista en axAudio.
+   * Enqueues and plays a track or playlist URL in axAudio.
    */
   public async play(guildId: string, url: string, options: PlayOptions = {}): Promise<PlayResponse> {
     return this.request<PlayResponse>('/v1/player/play', {
@@ -260,7 +260,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Ejecuta una acción de control inmediata (pause, resume, stop, skip, clear, volume).
+   * Executes an immediate player control action (pause, resume, stop, skip, clear, volume).
    */
   public async control(guildId: string, action: ControlAction, value?: number): Promise<string> {
     return this.request<string>('/v1/player/control', {
@@ -274,7 +274,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Consulta el estado de la cola y la pista en curso.
+   * Queries the current player queue and playing track state.
    */
   public async getQueue(guildId: string): Promise<QueueResponse> {
     return this.request<QueueResponse>('/v1/player/queue', {
@@ -284,7 +284,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Modifica el ecualizador de 15 bandas o aplica un preset acústico.
+   * Modifies the 15-band equalizer gains or applies an acoustic preset.
    */
   public async setEq(guildId: string, bands?: BandSetting[], preset?: string): Promise<DspResponse> {
     return this.request<DspResponse>('/v1/player/eq', {
@@ -298,7 +298,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Modifica parámetros avanzados de DSP (espacialización Mid/Side 3D, crossfeed, excitador).
+   * Modifies advanced DSP parameters (Mid/Side 3D spatial widening, crossfeed, exciter).
    */
   public async setDsp(
     guildId: string,
@@ -320,7 +320,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Resuelve metadatos y stream CDN de una URL sin encolar.
+   * Resolves track metadata and audio CDN stream for a URL without enqueueing.
    */
   public async resolveTrack(query: string, options: Partial<PlayOptions> = {}): Promise<Track> {
     return this.request<Track>('/v1/tracks/resolve', {
@@ -336,7 +336,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Busca pistas en YouTube o SoundCloud mediante axAudio.
+   * Searches for tracks across YouTube or SoundCloud via axAudio.
    */
   public async searchTracks(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
     return this.request<SearchResponse>('/v1/tracks/search', {
@@ -353,7 +353,7 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Destruye la conexión y cancela reconexiones automáticas.
+   * Destroys the node connection and cancels pending reconnection timers.
    */
   public destroy(): void {
     this.destroyed = true;

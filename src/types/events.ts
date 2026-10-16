@@ -1,7 +1,7 @@
 import type { Track } from './player.js';
 
 /**
- * Paquete de evento WebSocket enviado por /v1/events en axAudio.
+ * Raw WebSocket event packet broadcast by axAudio over /v1/events.
  */
 export type RawPlayerEvent =
   | {

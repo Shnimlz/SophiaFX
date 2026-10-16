@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version_strategy:
-        description: 'Estrategia de versión'
+        description: 'Versioning strategy'
         required: true
         default: 'commit_count'
         type: choice
@@ -17,12 +17,12 @@ on:
           - major
           - custom
       custom_version:
-        description: 'Versión personalizada (solo si la estrategia es "custom")'
+        description: 'Custom version string (used only if strategy is "custom")'
         required: false
         default: ''
         type: string
       publish_npm:
-        description: 'Publicar en el registro de npm'
+        description: 'Publish package to npm registry'
         required: true
         default: true
         type: boolean
@@ -74,7 +74,7 @@ jobs:
           elif [ "$STRATEGY" = "major" ]; then
             npm version major --no-git-tag-version
           else
-            # Estilo axAudio: BASE_MAJOR_MINOR.<COMMITS>
+            # axAudio pattern: BASE_MAJOR_MINOR.<COMMITS>
             BASE_PREFIX=$(node -p "require('./package.json').version.split('.').slice(0, 2).join('.')")
             COMMITS=$(git rev-list --count HEAD)
             COMPUTED_VERSION="${BASE_PREFIX}.${COMMITS}"
