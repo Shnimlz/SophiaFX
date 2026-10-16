@@ -1,4 +1,10 @@
-export { Rona, type RonaOptions, type JoinVoiceOptions } from './Rona.js';
+export {
+  SophiaFX,
+  Sophia,
+  type SophiaFXOptions,
+  type JoinVoiceOptions
+} from './SophiaFX.js';
+
 export { Node, type NodeEvents } from './Node.js';
 export { Player, type ConnectOptions } from './Player.js';
 

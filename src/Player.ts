@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { Node } from './Node.js';
-import type { Rona } from './Rona.js';
+import type { SophiaFX } from './SophiaFX.js';
 import type {
   Track,
   PlayOptions,
@@ -23,7 +23,7 @@ export interface ConnectOptions {
  * Controlador de reproducción y audio en tiempo real para un Guild.
  */
 export class Player extends EventEmitter {
-  public readonly rona: Rona;
+  public readonly sophia: SophiaFX;
   public readonly guildId: string;
   public node: Node;
 
@@ -44,9 +44,9 @@ export class Player extends EventEmitter {
     serverUpdate?: { token: string; endpoint: string };
   } | null = null;
 
-  constructor(rona: Rona, node: Node, guildId: string) {
+  constructor(sophia: SophiaFX, node: Node, guildId: string) {
     super();
-    this.rona = rona;
+    this.sophia = sophia;
     this.node = node;
     this.guildId = guildId;
   }
@@ -56,16 +56,16 @@ export class Player extends EventEmitter {
    */
   public async connect(channelId: string, options: ConnectOptions = {}): Promise<void> {
     const timeoutMs = options.timeoutMs ?? 15000;
-    const botId = this.rona.connector.getBotId();
+    const botId = this.sophia.connector.getBotId();
 
     // Reset preventivo: forzar salida previa para renovar handshakes en caso de reconexión
-    this.rona.connector.sendVoiceUpdate(this.guildId, null, false, false);
+    this.sophia.connector.sendVoiceUpdate(this.guildId, null, false, false);
     await new Promise((r) => setTimeout(r, 250));
 
     const voiceInfo = await new Promise<any>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pendingVoiceHandshake = null;
-        reject(new Error(`[Rona/Player] Timeout (${timeoutMs}ms) esperando handshakes de voz de Discord (VOICE_SERVER_UPDATE)`));
+        reject(new Error(`[SophiaFX/Player] Timeout (${timeoutMs}ms) esperando handshakes de voz de Discord (VOICE_SERVER_UPDATE)`));
       }, timeoutMs);
 
       this.pendingVoiceHandshake = {
@@ -75,7 +75,7 @@ export class Player extends EventEmitter {
       };
 
       // Emitir OpCode 4 a Discord
-      this.rona.connector.sendVoiceUpdate(
+      this.sophia.connector.sendVoiceUpdate(
         this.guildId,
         channelId,
         options.selfMute ?? false,
@@ -105,7 +105,7 @@ export class Player extends EventEmitter {
 
     if (packet.t === 'VOICE_STATE_UPDATE') {
       const d = packet.d;
-      if (d.guild_id === this.guildId && d.user_id === this.rona.connector.getBotId()) {
+      if (d.guild_id === this.guildId && d.user_id === this.sophia.connector.getBotId()) {
         if (d.channel_id && d.session_id) {
           this.pendingVoiceHandshake.sessionId = d.session_id;
           this.checkHandshakeComplete();
@@ -261,7 +261,7 @@ export class Player extends EventEmitter {
     } catch {}
 
     try {
-      this.rona.connector.sendVoiceUpdate(this.guildId, null, false, false);
+      this.sophia.connector.sendVoiceUpdate(this.guildId, null, false, false);
     } catch {}
 
     this.channelId = null;
@@ -271,7 +271,7 @@ export class Player extends EventEmitter {
     this.queue = [];
 
     this.emit('destroy');
-    this.rona.destroyPlayer(this.guildId);
+    this.sophia.destroyPlayer(this.guildId);
   }
 
   /**

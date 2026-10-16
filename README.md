@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ SophiaFx (Rona)
+# ⚡ SophiaFX
 
 **Ultra-lightweight, high-performance TypeScript client and orchestrator for [axAudio](https://github.com/Shnimlz/axAudio) Discord audio engines.**
 
@@ -46,7 +46,7 @@ npm install discord.js
 
 ```typescript
 import { Client, GatewayIntentBits } from 'discord.js';
-import { Rona, DiscordJSConnector } from 'sophiafx';
+import { SophiaFX, DiscordJSConnector } from 'sophiafx';
 
 const client = new Client({
   intents: [
@@ -56,8 +56,8 @@ const client = new Client({
   ]
 });
 
-// Inicializar el orquestador Rona
-const rona = new Rona(
+// Inicializar el orquestador SophiaFX
+const sophia = new SophiaFX(
   new DiscordJSConnector(client),
   [
     {
@@ -70,19 +70,19 @@ const rona = new Rona(
 );
 
 // Eventos del cluster de nodos
-rona.on('ready', (nodeName) => {
+sophia.on('ready', (nodeName) => {
   console.log(`🔌 Nodo axAudio '${nodeName}' conectado y listo.`);
 });
 
-rona.on('trackStart', (player, track) => {
+sophia.on('trackStart', (player, track) => {
   console.log(`🎶 [Guild ${player.guildId}] Reproduciendo: ${track.title}`);
 });
 
-rona.on('trackEnd', (player, track, reason) => {
+sophia.on('trackEnd', (player, track, reason) => {
   console.log(`⏹️ [Guild ${player.guildId}] Pista finalizada: ${track?.title} (${reason})`);
 });
 
-rona.on('trackError', (player, track, error) => {
+sophia.on('trackError', (player, track, error) => {
   console.error(`❌ [Guild ${player.guildId}] Error en pista ${track?.title}: ${error}`);
 });
 
@@ -102,7 +102,7 @@ client.on('interactionCreate', async (interaction) => {
     const query = interaction.options.getString('query', true);
 
     // Conectar a voz y obtener el reproductor
-    const player = await rona.join({
+    const player = await sophia.join({
       guildId: guildId!,
       channelId: voiceChannel.id
     });
@@ -118,25 +118,25 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (commandName === 'pause') {
-    const player = rona.getPlayer(guildId!);
+    const player = sophia.getPlayer(guildId!);
     await player?.pause();
     await interaction.reply('⏸️ Reproducción pausada.');
   }
 
   if (commandName === 'resume') {
-    const player = rona.getPlayer(guildId!);
+    const player = sophia.getPlayer(guildId!);
     await player?.resume();
     await interaction.reply('▶️ Reproducción reanudada.');
   }
 
   if (commandName === 'skip') {
-    const player = rona.getPlayer(guildId!);
+    const player = sophia.getPlayer(guildId!);
     await player?.skip();
     await interaction.reply('⏭️ Pista saltada.');
   }
 
   if (commandName === 'leave') {
-    const player = rona.getPlayer(guildId!);
+    const player = sophia.getPlayer(guildId!);
     await player?.disconnect();
     await interaction.reply('🚪 Desconectado del canal de voz.');
   }
@@ -149,7 +149,7 @@ client.login('TU_DISCORD_BOT_TOKEN');
 
 ## 🎛️ DSP & Ecualización de Estudio
 
-axAudio incorpora procesamiento de señales digitales (DSP) en tiempo real a 48 kHz. SophiaFx permite controlar todos los aspectos del motor desde el código:
+axAudio incorpora procesamiento de señales digitales (DSP) en tiempo real a 48 kHz. SophiaFX permite controlar todos los aspectos del motor desde el código:
 
 ### 1. Aplicar Presets Acústicos
 
@@ -196,7 +196,7 @@ Puedes resolver enlaces o buscar contenido sin encolarlo de inmediato:
 
 ```typescript
 // Búsqueda en YouTube o SoundCloud
-const results = await rona.search('Daft Punk Get Lucky', {
+const results = await sophia.search('Daft Punk Get Lucky', {
   source: 'youtube',
   limit: 5
 });
@@ -206,7 +206,7 @@ for (const track of results.tracks) {
 }
 
 // Resolución directa de metadatos y CDN stream
-const resolved = await rona.resolve('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+const resolved = await sophia.resolve('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 console.log(`Stream CDN directo: ${resolved.stream_url}`);
 ```
 
@@ -217,7 +217,7 @@ console.log(`Stream CDN directo: ${resolved.stream_url}`);
 Si tu bot corre en contenedores separados donde los eventos del Gateway de Discord viajan a través de Kafka o RabbitMQ:
 
 ```typescript
-import { Rona, RawConnector } from 'sophiafx';
+import { SophiaFX, RawConnector } from 'sophiafx';
 
 const connector = new RawConnector({
   botId: '123456789012345678',
@@ -230,7 +230,7 @@ const connector = new RawConnector({
   }
 });
 
-const rona = new Rona(connector, [{ name: 'axaudio', url: 'http://axaudio:2333' }]);
+const sophia = new SophiaFX(connector, [{ name: 'axaudio', url: 'http://axaudio:2333' }]);
 
 // Alimentar paquetes cuando lleguen del broker
 brokerConsumer.on('message', (msg) => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Rona, RawConnector, Node, Player } from '../dist/index.js';
+import { SophiaFX, RawConnector, Node, Player } from '../dist/index.js';
 
 test('RawConnector provides Bot ID and sends voice updates', () => {
   let calledWith = null;
@@ -33,13 +33,13 @@ test('Node normalizes HTTP and WebSocket URLs correctly', () => {
   assert.equal(node.connected, false);
 });
 
-test('Rona orchestrates players and nodes cleanly', () => {
+test('SophiaFX orchestrates players and nodes cleanly', () => {
   const connector = new RawConnector({
     botId: '987654321',
     sendVoiceUpdate: () => {}
   });
 
-  const rona = new Rona(
+  const sophia = new SophiaFX(
     connector,
     [
       {
@@ -51,10 +51,10 @@ test('Rona orchestrates players and nodes cleanly', () => {
     { defaultSearchSource: 'youtube' }
   );
 
-  assert.equal(rona.nodes.size, 1);
-  assert.ok(rona.nodes.get('primary'));
+  assert.equal(sophia.nodes.size, 1);
+  assert.ok(sophia.nodes.get('primary'));
 
-  const player = rona.createPlayer('guild_100', 'primary');
+  const player = sophia.createPlayer('guild_100', 'primary');
   assert.ok(player instanceof Player);
   assert.equal(player.guildId, 'guild_100');
   assert.equal(player.volume, 1.0);
@@ -62,10 +62,10 @@ test('Rona orchestrates players and nodes cleanly', () => {
   assert.equal(player.isPaused, false);
   assert.deepEqual(player.queue, []);
 
-  assert.equal(rona.getPlayer('guild_100'), player);
+  assert.equal(sophia.getPlayer('guild_100'), player);
 
-  rona.destroyPlayer('guild_100');
-  assert.equal(rona.getPlayer('guild_100'), undefined);
+  sophia.destroyPlayer('guild_100');
+  assert.equal(sophia.getPlayer('guild_100'), undefined);
 
-  rona.destroy();
+  sophia.destroy();
 });

@@ -20,7 +20,7 @@ export interface DiscordGatewayPacket {
 }
 
 /**
- * Interfaz base para conectar Rona con cualquier cliente de Discord (discord.js, oceanic, eris o websocket raw).
+ * Interfaz base para conectar SophiaFX con cualquier cliente de Discord (discord.js, oceanic, eris o websocket raw).
  */
 export abstract class Connector extends EventEmitter {
   /**

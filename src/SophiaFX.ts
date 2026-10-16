@@ -10,7 +10,7 @@ import type {
   SearchResponse
 } from './types/index.js';
 
-export interface RonaOptions {
+export interface SophiaFXOptions {
   /**
    * Proveedor de búsqueda por defecto.
    * @default 'auto'
@@ -36,13 +36,13 @@ export interface JoinVoiceOptions {
 /**
  * Orquestador principal de nodos axAudio y reproductores de voz.
  */
-export class Rona extends EventEmitter {
+export class SophiaFX extends EventEmitter {
   public readonly connector: Connector;
-  public readonly options: RonaOptions;
+  public readonly options: SophiaFXOptions;
   public readonly nodes: Map<string, Node> = new Map();
   public readonly players: Map<string, Player> = new Map();
 
-  constructor(connector: Connector, nodes: NodeOptions[], options: RonaOptions = {}) {
+  constructor(connector: Connector, nodes: NodeOptions[], options: SophiaFXOptions = {}) {
     super();
     this.connector = connector;
     this.options = {
@@ -67,7 +67,7 @@ export class Rona extends EventEmitter {
    */
   public addNode(options: NodeOptions): Node {
     if (this.nodes.has(options.name)) {
-      throw new Error(`[Rona] Ya existe un nodo con el nombre '${options.name}'`);
+      throw new Error(`[SophiaFX] Ya existe un nodo con el nombre '${options.name}'`);
     }
 
     const node = new Node(options);
@@ -135,14 +135,14 @@ export class Rona extends EventEmitter {
     if (name) {
       const target = this.nodes.get(name);
       if (!target) {
-        throw new Error(`[Rona] Nodo axAudio '${name}' no encontrado en el cluster`);
+        throw new Error(`[SophiaFX] Nodo axAudio '${name}' no encontrado en el cluster`);
       }
       return target;
     }
 
     const connectedNodes = Array.from(this.nodes.values()).filter((n) => n.connected);
     if (connectedNodes.length === 0) {
-      throw new Error('[Rona] No hay nodos axAudio conectados y saludables en este momento');
+      throw new Error('[SophiaFX] No hay nodos axAudio conectados y saludables en este momento');
     }
 
     // Algoritmo de menor carga: menor cantidad de active_players o players locales
@@ -272,3 +272,6 @@ export class Rona extends EventEmitter {
     this.removeAllListeners();
   }
 }
+
+// Alias conveniente
+export const Sophia = SophiaFX;
