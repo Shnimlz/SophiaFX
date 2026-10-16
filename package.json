@@ -21,7 +21,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint",
+    "lint": "oxlint src test",
     "test": "npm run build && node --test test/*.test.js",
     "prepublishOnly": "npm run build"
   },
@@ -52,7 +52,6 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@oxlint/plugins": "^1.88.0",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.5.13",
     "oxlint": "^1.88.0",
