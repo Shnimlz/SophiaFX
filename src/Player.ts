@@ -13,11 +13,31 @@ import type {
   PresetName
 } from './types/index.js';
 
-export interface ConnectOptions {
+import {
+  isVoiceServerPacket,
+  isVoiceStatePacket,
+  type DiscordGatewayPacket
+} from './connectors/Connector.js';
+
+export type ConnectOptions = {
   selfMute?: boolean;
   selfDeaf?: boolean;
   timeoutMs?: number;
-}
+};
+
+type PendingVoiceInfo = {
+  sessionId: string;
+  token: string;
+  endpoint: string;
+};
+
+type PendingHandshakeState = {
+  resolve: (info: PendingVoiceInfo) => void;
+  reject: (err: Error) => void;
+  timer: NodeJS.Timeout;
+  sessionId?: string;
+  serverUpdate?: { token: string; endpoint: string };
+};
 
 /**
  * Controlador de reproducción y audio en tiempo real para un Guild.
@@ -36,13 +56,7 @@ export class Player extends EventEmitter {
   public dspStatus: DspStatus | null = null;
 
   // Manejo de promesa pendiente de handshake
-  private pendingVoiceHandshake: {
-    resolve: (info: any) => void;
-    reject: (err: any) => void;
-    timer: NodeJS.Timeout;
-    sessionId?: string;
-    serverUpdate?: { token: string; endpoint: string };
-  } | null = null;
+  private pendingVoiceHandshake: PendingHandshakeState | null = null;
 
   constructor(sophia: SophiaFX, node: Node, guildId: string) {
     super();
@@ -62,10 +76,14 @@ export class Player extends EventEmitter {
     this.sophia.connector.sendVoiceUpdate(this.guildId, null, false, false);
     await new Promise((r) => setTimeout(r, 250));
 
-    const voiceInfo = await new Promise<any>((resolve, reject) => {
+    const voiceInfo = await new Promise<PendingVoiceInfo>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pendingVoiceHandshake = null;
-        reject(new Error(`[SophiaFX/Player] Timeout (${timeoutMs}ms) esperando handshakes de voz de Discord (VOICE_SERVER_UPDATE)`));
+        reject(
+          new Error(
+            `[SophiaFX/Player] Timeout (${timeoutMs}ms) esperando handshakes de voz de Discord (VOICE_SERVER_UPDATE)`
+          )
+        );
       }, timeoutMs);
 
       this.pendingVoiceHandshake = {
@@ -100,19 +118,21 @@ export class Player extends EventEmitter {
    * Procesa paquetes raw de voz interceptados por el conector.
    * @internal
    */
-  public handleRawVoicePacket(packet: any): void {
-    if (!this.pendingVoiceHandshake || !packet.d) return;
+  public handleRawVoicePacket(packet: DiscordGatewayPacket): void {
+    if (!this.pendingVoiceHandshake) return;
 
-    if (packet.t === 'VOICE_STATE_UPDATE') {
+    if (isVoiceStatePacket(packet)) {
       const d = packet.d;
+
       if (d.guild_id === this.guildId && d.user_id === this.sophia.connector.getBotId()) {
         if (d.channel_id && d.session_id) {
           this.pendingVoiceHandshake.sessionId = d.session_id;
           this.checkHandshakeComplete();
         }
       }
-    } else if (packet.t === 'VOICE_SERVER_UPDATE') {
+    } else if (isVoiceServerPacket(packet)) {
       const d = packet.d;
+
       if (d.guild_id === this.guildId) {
         if (d.token && d.endpoint) {
           this.pendingVoiceHandshake.serverUpdate = {
@@ -133,11 +153,13 @@ export class Player extends EventEmitter {
     ) {
       clearTimeout(this.pendingVoiceHandshake.timer);
       const resolve = this.pendingVoiceHandshake.resolve;
+
       const data = {
         sessionId: this.pendingVoiceHandshake.sessionId,
         token: this.pendingVoiceHandshake.serverUpdate.token,
         endpoint: this.pendingVoiceHandshake.serverUpdate.endpoint
       };
+
       this.pendingVoiceHandshake = null;
       resolve(data);
     }
@@ -150,9 +172,11 @@ export class Player extends EventEmitter {
     const res = await this.node.play(this.guildId, url, options);
     this.isPlaying = true;
     this.isPaused = false;
+
     if (options.volume !== undefined) {
       this.volume = options.volume;
     }
+
     return res;
   }
 
@@ -215,6 +239,7 @@ export class Player extends EventEmitter {
     this.isPlaying = res.is_playing;
     this.current = res.current;
     this.queue = res.queue;
+
     return res;
   }
 
@@ -224,6 +249,7 @@ export class Player extends EventEmitter {
   public async setPreset(preset: PresetName): Promise<DspResponse> {
     const res = await this.node.setEq(this.guildId, undefined, preset);
     this.dspStatus = res.status;
+
     return res;
   }
 
@@ -233,6 +259,7 @@ export class Player extends EventEmitter {
   public async setEqualizer(bands: BandSetting[]): Promise<DspResponse> {
     const res = await this.node.setEq(this.guildId, bands);
     this.dspStatus = res.status;
+
     return res;
   }
 
@@ -242,6 +269,7 @@ export class Player extends EventEmitter {
   public async setSpatial(spatial: SpatialSettings): Promise<DspResponse> {
     const res = await this.node.setDsp(this.guildId, { spatial });
     this.dspStatus = res.status;
+
     return res;
   }
 

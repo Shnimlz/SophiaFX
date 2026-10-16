@@ -5,21 +5,21 @@ export const EQ_FREQUENCIES = [
   25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000
 ] as const;
 
-export type EqFrequency = typeof EQ_FREQUENCIES[number];
+export type EqFrequency = (typeof EQ_FREQUENCIES)[number];
 
 /**
  * Configuración de ganancia para una banda individual (0 a 14).
  * Acepta dB directo (-15.0 a +15.0) o escala lineal de Lavalink (-0.5 a +1.0).
  */
-export interface BandSetting {
+export type BandSetting = {
   band: number;
   gain: number;
-}
+};
 
 /**
  * Parámetros de modelado acústico 3D y psicoacústico en tiempo real.
  */
-export interface SpatialSettings {
+export type SpatialSettings = {
   /**
    * Amplitud del campo estéreo Mid/Side:
    * 0.0 (Mono), 1.0 (Normal / Neutro), 1.35 (Inmersión 3D estándar), 2.0 (Ultra Wide).
@@ -52,7 +52,7 @@ export interface SpatialSettings {
    * @default 0.35
    */
   bass_exciter_drive?: number;
-}
+};
 
 /**
  * Presets de estudio calibrados de axAudio.
@@ -69,23 +69,23 @@ export type PresetName =
 /**
  * Telemetría del estado actual del DSP.
  */
-export interface DspStatus {
+export type DspStatus = {
   active_preset: string | null;
   stereo_width: number;
   binaural_crossfeed: boolean;
   bass_exciter: boolean;
   eq_bands: number[];
-}
+};
 
-export interface DspPayload {
+export type DspPayload = {
   guild_id: string;
   preset?: string | null;
   spatial?: SpatialSettings | null;
   bands?: BandSetting[] | null;
-}
+};
 
-export interface DspResponse {
+export type DspResponse = {
   guild_id: string;
   status: DspStatus;
   message: string;
-}
+};

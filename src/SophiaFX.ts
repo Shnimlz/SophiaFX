@@ -1,7 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { Node } from './Node.js';
 import { Player } from './Player.js';
-import type { Connector, DiscordGatewayPacket } from './connectors/Connector.js';
+import {
+  isVoiceServerPacket,
+  isVoiceStatePacket,
+  type Connector,
+  type DiscordGatewayPacket
+} from './connectors/Connector.js';
 import type {
   NodeOptions,
   Track,
@@ -10,7 +15,7 @@ import type {
   SearchResponse
 } from './types/index.js';
 
-export interface SophiaFXOptions {
+export type SophiaFXOptions = {
   /**
    * Proveedor de búsqueda por defecto.
    * @default 'auto'
@@ -22,16 +27,16 @@ export interface SophiaFXOptions {
    * @default true
    */
   moveOnDisconnect?: boolean;
-}
+};
 
-export interface JoinVoiceOptions {
+export type JoinVoiceOptions = {
   guildId: string;
   channelId: string;
   nodeName?: string;
   selfMute?: boolean;
   selfDeaf?: boolean;
   timeoutMs?: number;
-}
+};
 
 /**
  * Orquestador principal de nodos axAudio y reproductores de voz.
@@ -80,6 +85,7 @@ export class SophiaFX extends EventEmitter {
 
     node.on('disconnect', (n, code, reason) => {
       this.emit('nodeDisconnect', n, code, reason);
+
       if (this.options.moveOnDisconnect) {
         this.handleNodeFailover(n);
       }
@@ -91,6 +97,7 @@ export class SophiaFX extends EventEmitter {
 
     node.on('trackStart', (guildId, track) => {
       const player = this.players.get(guildId);
+
       if (player) {
         player.emitTrackStart(track);
         this.emit('trackStart', player, track);
@@ -99,6 +106,7 @@ export class SophiaFX extends EventEmitter {
 
     node.on('trackEnd', (guildId, track, reason) => {
       const player = this.players.get(guildId);
+
       if (player) {
         player.emitTrackEnd(track, reason);
         this.emit('trackEnd', player, track, reason);
@@ -107,6 +115,7 @@ export class SophiaFX extends EventEmitter {
 
     node.on('trackError', (guildId, track, error) => {
       const player = this.players.get(guildId);
+
       if (player) {
         player.emitTrackError(track, error);
         this.emit('trackError', player, track, error);
@@ -114,6 +123,7 @@ export class SophiaFX extends EventEmitter {
     });
 
     node.connect();
+
     return node;
   }
 
@@ -122,6 +132,7 @@ export class SophiaFX extends EventEmitter {
    */
   public removeNode(name: string): void {
     const node = this.nodes.get(name);
+
     if (node) {
       node.destroy();
       this.nodes.delete(name);
@@ -134,13 +145,16 @@ export class SophiaFX extends EventEmitter {
   public getNode(name?: string): Node {
     if (name) {
       const target = this.nodes.get(name);
+
       if (!target) {
         throw new Error(`[SophiaFX] Nodo axAudio '${name}' no encontrado en el cluster`);
       }
+
       return target;
     }
 
     const connectedNodes = Array.from(this.nodes.values()).filter((n) => n.connected);
+
     if (connectedNodes.length === 0) {
       throw new Error('[SophiaFX] No hay nodos axAudio conectados y saludables en este momento');
     }
@@ -149,6 +163,7 @@ export class SophiaFX extends EventEmitter {
     connectedNodes.sort((a, b) => {
       const countA = a.stats?.active_players ?? 0;
       const countB = b.stats?.active_players ?? 0;
+
       return countA - countB;
     });
 
@@ -160,6 +175,7 @@ export class SophiaFX extends EventEmitter {
    */
   public createPlayer(guildId: string, nodeName?: string): Player {
     let player = this.players.get(guildId);
+
     if (player) return player;
 
     const node = this.getNode(nodeName);
@@ -180,6 +196,7 @@ export class SophiaFX extends EventEmitter {
       selfDeaf: options.selfDeaf,
       timeoutMs: options.timeoutMs
     });
+
     return player;
   }
 
@@ -195,6 +212,7 @@ export class SophiaFX extends EventEmitter {
    */
   public destroyPlayer(guildId: string): void {
     const player = this.players.get(guildId);
+
     if (player) {
       this.players.delete(guildId);
       this.emit('playerDestroy', player);
@@ -206,6 +224,7 @@ export class SophiaFX extends EventEmitter {
    */
   public async search(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
     const node = this.getNode();
+
     return node.searchTracks(query, {
       source: options.source ?? this.options.defaultSearchSource ?? 'auto',
       ...options
@@ -217,19 +236,19 @@ export class SophiaFX extends EventEmitter {
    */
   public async resolve(query: string, options: Partial<PlayOptions> = {}): Promise<Track> {
     const node = this.getNode();
+
     return node.resolveTrack(query, options);
   }
 
   private handleGatewayPacket(packet: DiscordGatewayPacket): void {
-    if (!packet || !packet.d) return;
+    if (!packet) return;
 
-    if (packet.t === 'VOICE_STATE_UPDATE' || packet.t === 'VOICE_SERVER_UPDATE') {
+    if (isVoiceStatePacket(packet) || isVoiceServerPacket(packet)) {
       const guildId = packet.d.guild_id;
-      if (guildId) {
-        const player = this.players.get(guildId);
-        if (player) {
-          player.handleRawVoicePacket(packet);
-        }
+      const player = this.players.get(guildId);
+
+      if (player) {
+        player.handleRawVoicePacket(packet);
       }
     }
   }
@@ -243,8 +262,10 @@ export class SophiaFX extends EventEmitter {
 
     try {
       const backupNode = this.getNode();
+
       for (const player of affectedPlayers) {
         player.node = backupNode;
+
         if (player.channelId) {
           player.connect(player.channelId).catch(() => {});
         }
@@ -261,11 +282,13 @@ export class SophiaFX extends EventEmitter {
     for (const player of this.players.values()) {
       player.disconnect().catch(() => {});
     }
+
     this.players.clear();
 
     for (const node of this.nodes.values()) {
       node.destroy();
     }
+
     this.nodes.clear();
 
     this.connector.destroy();

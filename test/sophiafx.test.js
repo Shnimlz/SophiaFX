@@ -69,3 +69,39 @@ test('SophiaFX orchestrates players and nodes cleanly', () => {
 
   sophia.destroy();
 });
+
+test('Type guards identify Discord voice packets accurately', async () => {
+  const { isVoiceStatePacket, isVoiceServerPacket } = await import('../dist/connectors/Connector.js');
+
+  const voiceStatePkt = {
+    t: 'VOICE_STATE_UPDATE',
+    d: {
+      guild_id: 'g1',
+      channel_id: 'c1',
+      user_id: 'u1',
+      session_id: 's1'
+    }
+  };
+
+  const voiceServerPkt = {
+    t: 'VOICE_SERVER_UPDATE',
+    d: {
+      guild_id: 'g1',
+      token: 'tok_abc',
+      endpoint: 'voice.discord.gg:443'
+    }
+  };
+
+  const messagePkt = {
+    t: 'MESSAGE_CREATE',
+    d: { id: 'm1', content: 'hello' }
+  };
+
+  assert.equal(isVoiceStatePacket(voiceStatePkt), true);
+  assert.equal(isVoiceStatePacket(voiceServerPkt), false);
+  assert.equal(isVoiceStatePacket(messagePkt), false);
+
+  assert.equal(isVoiceServerPacket(voiceServerPkt), true);
+  assert.equal(isVoiceServerPacket(voiceStatePkt), false);
+  assert.equal(isVoiceServerPacket(messagePkt), false);
+});

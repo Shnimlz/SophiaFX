@@ -18,14 +18,14 @@ import type {
   RawPlayerEvent
 } from './types/index.js';
 
-export interface NodeEvents {
+export type NodeEvents = {
   connect: (node: Node) => void;
   disconnect: (node: Node, code: number, reason: string) => void;
   error: (node: Node, error: Error) => void;
   trackStart: (guildId: string, track: Track) => void;
   trackEnd: (guildId: string, track: Track | null, reason: string) => void;
   trackError: (guildId: string, track: Track | null, error: string) => void;
-}
+};
 
 /**
  * Representa una conexión activa a un nodo de audio axAudio.
@@ -51,9 +51,11 @@ export class Node extends EventEmitter {
 
     // Normalizar URLs
     let baseUrl = options.url.trim();
+
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
     }
+
     this.url = baseUrl;
 
     const parsed = new URL(baseUrl);
@@ -98,8 +100,9 @@ export class Node extends EventEmitter {
           this.ws.pong(payload);
         }
       });
-    } catch (err: any) {
-      this.emit('error', this, err);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.emit('error', this, error);
       this.scheduleReconnect();
     }
   }
@@ -129,6 +132,7 @@ export class Node extends EventEmitter {
     if (this.destroyed || this.options.autoReconnect === false) return;
 
     const maxAttempts = this.options.reconnectAttempts ?? -1;
+
     if (maxAttempts !== -1 && this.reconnectAttempts >= maxAttempts) {
       return;
     }
@@ -149,11 +153,13 @@ export class Node extends EventEmitter {
     if (this.ws) {
       this.ws.removeAllListeners();
       this.ws.on('error', () => {});
+
       try {
         if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
           this.ws.close();
         }
       } catch {}
+
       this.ws = null;
     }
   }
@@ -175,10 +181,11 @@ export class Node extends EventEmitter {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          ...(options.headers || {})
+          ...options.headers
         }
       });
 
+      // SAFETY: axAudio HTTP endpoints always return a serialized ApiResponse<T> JSON structure
       const body = (await res.json().catch(() => ({
         success: false,
         data: null,
@@ -189,6 +196,7 @@ export class Node extends EventEmitter {
         throw new Error(body.message || `axAudio request failed with status ${res.status}`);
       }
 
+      // SAFETY: when body.success is true, data contains payload of type T
       return body.data as T;
     } finally {
       clearTimeout(timeout);
@@ -201,6 +209,7 @@ export class Node extends EventEmitter {
   public async fetchStats(): Promise<NodeStats> {
     const stats = await this.request<NodeStats>('/v1/stats', { method: 'GET' });
     this.stats = stats;
+
     return stats;
   }
 
@@ -348,10 +357,12 @@ export class Node extends EventEmitter {
    */
   public destroy(): void {
     this.destroyed = true;
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
+
     this.cleanupSocket();
     this.removeAllListeners();
   }

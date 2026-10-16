@@ -1,16 +1,26 @@
 import { Connector, type DiscordGatewayPacket } from './Connector.js';
 
-export interface RawConnectorOptions {
+export type RawConnectorOptions = {
   botId: string;
-  sendVoiceUpdate: (guildId: string, channelId: string | null, selfMute?: boolean, selfDeaf?: boolean) => void;
-}
+  sendVoiceUpdate: (
+    guildId: string,
+    channelId: string | null,
+    selfMute?: boolean,
+    selfDeaf?: boolean
+  ) => void;
+};
 
 /**
  * Conector agnóstico para bots con arquitecturas desacopladas o microservicios.
  */
 export class RawConnector extends Connector {
   private botId: string;
-  private sendVoiceFn: (guildId: string, channelId: string | null, selfMute?: boolean, selfDeaf?: boolean) => void;
+  private sendVoiceFn: (
+    guildId: string,
+    channelId: string | null,
+    selfMute?: boolean,
+    selfDeaf?: boolean
+  ) => void;
   private listener: ((packet: DiscordGatewayPacket) => void) | null = null;
 
   constructor(options: RawConnectorOptions) {

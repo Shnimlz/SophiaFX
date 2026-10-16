@@ -1,7 +1,7 @@
 /**
  * Configuración de un nodo axAudio.
  */
-export interface NodeOptions {
+export type NodeOptions = {
   /**
    * Identificador único o etiqueta para este nodo (ej: 'local-node', 'us-vps').
    */
@@ -35,23 +35,23 @@ export interface NodeOptions {
    * @default 15000
    */
   requestTimeout?: number;
-}
+};
 
 /**
  * Métricas de salud y rendimiento retornadas por /v1/stats.
  */
-export interface NodeStats {
+export type NodeStats = {
   status: string;
   version: string;
   uptime_seconds: number;
   active_players: number;
-}
+};
 
 /**
  * Envoltorio estándar de respuesta de axAudio.
  */
-export interface ApiResponse<T> {
+export type ApiResponse<T> = {
   success: boolean;
   data: T | null;
   message?: string | null;
-}
+};
