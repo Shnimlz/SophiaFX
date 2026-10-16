@@ -12,7 +12,7 @@
 
 Una alternativa moderna y con tipado seguro a Shoukaku, diseñada para el pipeline de audio nativo en Rust de axAudio: latencia submilisegundo, ecualizador DSP de 15 bandas y telemetría en tiempo real por WebSocket.
 
-[Instalación](#instalación) · [Inicio rápido](#inicio-rápido) · [DSP y ecualización](#dsp-y-ecualización) · [Búsqueda](#búsqueda-y-resolución-de-pistas) · [Eventos](#eventos) · [Raw Connector](#raw-connector)
+[English](assets/language/en.md) · [Instalación](#instalación) · [Inicio rápido](#inicio-rápido) · [DSP y ecualización](#dsp-y-ecualización) · [Búsqueda](#búsqueda-y-resolución-de-pistas) · [Eventos](#eventos) · [Raw Connector](#raw-connector)
 
 </div>
 
