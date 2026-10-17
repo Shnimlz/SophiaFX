@@ -300,6 +300,7 @@ export class Node extends EventEmitter {
       if (options.index !== undefined) payload.index = options.index;
       if (options.from_index !== undefined) payload.from_index = options.from_index;
       if (options.to_index !== undefined) payload.to_index = options.to_index;
+      if (options.enabled !== undefined) payload.enabled = options.enabled;
     }
 
     return this.request<string>('/v1/player/control', {
@@ -315,6 +316,16 @@ export class Node extends EventEmitter {
     return this.request<QueueResponse>('/v1/player/queue', {
       method: 'POST',
       body: JSON.stringify({ guild_id: guildId })
+    });
+  }
+
+  /**
+   * Sets or toggles autoplay mode for a guild.
+   */
+  public async setAutoplay(guildId: string, enabled?: boolean): Promise<boolean> {
+    return this.request<boolean>('/v1/player/autoplay', {
+      method: 'POST',
+      body: JSON.stringify({ guild_id: guildId, enabled })
     });
   }
 

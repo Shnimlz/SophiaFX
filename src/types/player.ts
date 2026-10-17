@@ -85,6 +85,7 @@ export type QueueResponse = {
   current: Track | null;
   current_position_secs?: number | null;
   loop_mode: LoopMode;
+  autoplay: boolean;
   queue: Track[];
   total_tracks: number;
 };
@@ -103,7 +104,8 @@ export type ControlAction =
   | 'loop'
   | 'shuffle'
   | 'remove'
-  | 'move';
+  | 'move'
+  | 'autoplay';
 
 /**
  * Parameters for player control operations.
@@ -115,6 +117,7 @@ export type ControlOptions = {
   index?: number;
   from_index?: number;
   to_index?: number;
+  enabled?: boolean;
 };
 
 /**

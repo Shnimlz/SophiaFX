@@ -58,6 +58,7 @@ export class Player extends EventEmitter {
   public current: Track | null = null;
   public queue: Track[] = [];
   public loopMode: LoopMode = 'off';
+  public autoplay = false;
   public currentPositionSecs: number | null = null;
   public dspStatus: DspStatus | null = null;
 
@@ -286,7 +287,17 @@ export class Player extends EventEmitter {
     this.queue = res.queue;
     this.currentPositionSecs = res.current_position_secs ?? null;
     this.loopMode = res.loop_mode ?? 'off';
+    this.autoplay = res.autoplay ?? false;
 
+    return res;
+  }
+
+  /**
+   * Configures or toggles autoplay mode (automatic recommendations when queue ends).
+   */
+  public async setAutoplay(enabled?: boolean): Promise<boolean> {
+    const res = await this.node.setAutoplay(this.guildId, enabled);
+    this.autoplay = res;
     return res;
   }
 
