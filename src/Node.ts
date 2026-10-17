@@ -189,6 +189,7 @@ export class Node extends EventEmitter {
     };
 
     if (this.options.password) {
+      headers['Authorization'] = `Bearer ${this.options.password}`;
       headers['x-axaudio-password'] = this.options.password;
     }
 
