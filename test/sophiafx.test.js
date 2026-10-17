@@ -105,3 +105,172 @@ test('Type guards identify Discord voice packets accurately', async () => {
   assert.equal(isVoiceServerPacket(voiceStatePkt), false);
   assert.equal(isVoiceServerPacket(messagePkt), false);
 });
+
+test('Node configures password authentication in wsUrl and headers', () => {
+  const node = new Node({
+    name: 'secured-node',
+    url: 'http://127.0.0.1:2333',
+    password: 'super-secret-password-123'
+  });
+
+  assert.equal(node.wsUrl, 'ws://127.0.0.1:2333/v1/events?password=super-secret-password-123');
+  assert.equal(node.options.password, 'super-secret-password-123');
+});
+
+test('Player executes extended controls and updates state', async () => {
+  const connector = new RawConnector({
+    botId: '123',
+    sendVoiceUpdate: () => {}
+  });
+
+  const sophia = new SophiaFX(connector, [
+    {
+      name: 'test-node',
+      url: 'http://127.0.0.1:2333',
+      autoReconnect: false
+    }
+  ]);
+
+  const node = sophia.nodes.get('test-node');
+  let lastControl = null;
+  node.control = async (guildId, action, options) => {
+    lastControl = { guildId, action, options };
+    return 'ok';
+  };
+
+  const player = sophia.createPlayer('guild_42', 'test-node');
+
+  // Seek
+  await player.seek(45.5);
+  assert.equal(player.currentPositionSecs, 45.5);
+  assert.deepEqual(lastControl, {
+    guildId: 'guild_42',
+    action: 'seek',
+    options: { position_secs: 45.5 }
+  });
+
+  // Loop
+  await player.setLoop('track');
+  assert.equal(player.loopMode, 'track');
+  assert.deepEqual(lastControl, {
+    guildId: 'guild_42',
+    action: 'loop',
+    options: { mode: 'track' }
+  });
+
+  // Shuffle
+  await player.shuffle();
+  assert.deepEqual(lastControl, {
+    guildId: 'guild_42',
+    action: 'shuffle',
+    options: undefined
+  });
+
+  // Remove
+  await player.removeTrack(2);
+  assert.deepEqual(lastControl, {
+    guildId: 'guild_42',
+    action: 'remove',
+    options: { index: 2 }
+  });
+
+  // Move
+  await player.moveTrack(3, 1);
+  assert.deepEqual(lastControl, {
+    guildId: 'guild_42',
+    action: 'move',
+    options: { from_index: 3, to_index: 1 }
+  });
+
+  sophia.destroy();
+});
+
+test('Player executes modulation, loudness and timescale DSP controls', async () => {
+  const connector = new RawConnector({
+    botId: '123',
+    sendVoiceUpdate: () => {}
+  });
+
+  const sophia = new SophiaFX(connector, [
+    {
+      name: 'test-node',
+      url: 'http://127.0.0.1:2333',
+      autoReconnect: false
+    }
+  ]);
+
+  const node = sophia.nodes.get('test-node');
+  let lastDsp = null;
+  node.setDsp = async (guildId, options) => {
+    lastDsp = { guildId, options };
+    return {
+      guild_id: guildId,
+      status: {
+        active_preset: null,
+        stereo_width: 1.0,
+        binaural_crossfeed: false,
+        bass_exciter: false,
+        eq_bands: [],
+        rotation: true,
+        rotation_speed_hz: 0.15,
+        tremolo: false,
+        vibrato: false,
+        loudness: true,
+        target_lufs: -14.0,
+        speed: 1.25,
+        pitch: 1.25,
+        rate: 1.0
+      },
+      message: 'DSP updated'
+    };
+  };
+
+  const player = sophia.createPlayer('guild_dsp', 'test-node');
+
+  // Rotation (8D)
+  await player.setRotation(true, 0.2);
+  assert.deepEqual(lastDsp.options.modulation, {
+    rotation: true,
+    rotation_speed_hz: 0.2
+  });
+
+  // Tremolo
+  await player.setTremolo(true, 5.0, 0.6);
+  assert.deepEqual(lastDsp.options.modulation, {
+    tremolo: true,
+    tremolo_freq_hz: 5.0,
+    tremolo_depth: 0.6
+  });
+
+  // Vibrato
+  await player.setVibrato(true, 4.0, 0.4);
+  assert.deepEqual(lastDsp.options.modulation, {
+    vibrato: true,
+    vibrato_freq_hz: 4.0,
+    vibrato_depth: 0.4
+  });
+
+  // Loudness (EBU R128)
+  await player.setLoudness({ enabled: true, target_lufs: -16.0 });
+  assert.deepEqual(lastDsp.options.loudness, {
+    enabled: true,
+    target_lufs: -16.0
+  });
+
+  // Timescale
+  await player.setTimescale({ speed: 1.25, pitch: 1.25, rate: 1.0 });
+  assert.deepEqual(lastDsp.options.timescale, {
+    speed: 1.25,
+    pitch: 1.25,
+    rate: 1.0
+  });
+
+  // Speed and Pitch helpers
+  await player.setSpeed(1.5);
+  assert.deepEqual(lastDsp.options.timescale, { speed: 1.5 });
+
+  await player.setPitch(0.85);
+  assert.deepEqual(lastDsp.options.timescale, { pitch: 0.85 });
+
+  sophia.destroy();
+});

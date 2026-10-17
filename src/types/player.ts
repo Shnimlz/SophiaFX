@@ -72,12 +72,19 @@ export type PlayResponse = Track & {
 };
 
 /**
+ * Loop modes supported by axAudio.
+ */
+export type LoopMode = 'off' | 'track' | 'queue';
+
+/**
  * Queue and playback status for a Discord guild.
  */
 export type QueueResponse = {
   guild_id: string;
   is_playing: boolean;
   current: Track | null;
+  current_position_secs?: number | null;
+  loop_mode: LoopMode;
   queue: Track[];
   total_tracks: number;
 };
@@ -85,7 +92,30 @@ export type QueueResponse = {
 /**
  * Immediate player control operations for /v1/player/control.
  */
-export type ControlAction = 'pause' | 'resume' | 'stop' | 'skip' | 'clear' | 'volume';
+export type ControlAction =
+  | 'pause'
+  | 'resume'
+  | 'stop'
+  | 'skip'
+  | 'clear'
+  | 'volume'
+  | 'seek'
+  | 'loop'
+  | 'shuffle'
+  | 'remove'
+  | 'move';
+
+/**
+ * Parameters for player control operations.
+ */
+export type ControlOptions = {
+  value?: number;
+  position_secs?: number;
+  mode?: LoopMode | string;
+  index?: number;
+  from_index?: number;
+  to_index?: number;
+};
 
 /**
  * Discord Voice Gateway credentials required for the Songbird UDP driver handshake.

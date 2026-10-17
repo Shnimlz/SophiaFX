@@ -9,11 +9,15 @@ import type {
   PlayResponse,
   QueueResponse,
   ControlAction,
+  ControlOptions,
   VoiceConnectionInfo,
   SearchOptions,
   SearchResponse,
   BandSetting,
   SpatialSettings,
+  ModulationSettings,
+  LoudnessSettings,
+  TimescaleSettings,
   DspResponse,
   RawPlayerEvent
 } from './types/index.js';
@@ -60,7 +64,11 @@ export class Node extends EventEmitter {
 
     const parsed = new URL(baseUrl);
     const wsProto = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
-    this.wsUrl = `${wsProto}//${parsed.host}/v1/events`;
+    let wsPath = `${wsProto}//${parsed.host}/v1/events`;
+    if (options.password) {
+      wsPath += `?password=${encodeURIComponent(options.password)}`;
+    }
+    this.wsUrl = wsPath;
   }
 
   /**
@@ -174,15 +182,21 @@ export class Node extends EventEmitter {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(options.headers as Record<string, string> | undefined)
+    };
+
+    if (this.options.password) {
+      headers['x-axaudio-password'] = this.options.password;
+    }
+
     try {
       const res = await fetch(targetUrl, {
         ...options,
         signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...options.headers
-        }
+        headers
       });
 
       // SAFETY: axAudio HTTP endpoints always return a serialized ApiResponse<T> JSON structure
@@ -260,16 +274,36 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Executes an immediate player control action (pause, resume, stop, skip, clear, volume).
+   * Executes an immediate player control action (pause, resume, stop, skip, clear, volume, seek, loop, shuffle, remove, move).
    */
-  public async control(guildId: string, action: ControlAction, value?: number): Promise<string> {
+  public async control(
+    guildId: string,
+    action: ControlAction,
+    options?: number | ControlOptions
+  ): Promise<string> {
+    const payload: Record<string, unknown> = {
+      guild_id: guildId,
+      action
+    };
+
+    if (typeof options === 'number') {
+      if (action === 'volume') {
+        payload.value = options;
+      } else if (action === 'seek') {
+        payload.position_secs = options;
+      }
+    } else if (options && typeof options === 'object') {
+      if (options.value !== undefined) payload.value = options.value;
+      if (options.position_secs !== undefined) payload.position_secs = options.position_secs;
+      if (options.mode !== undefined) payload.mode = options.mode;
+      if (options.index !== undefined) payload.index = options.index;
+      if (options.from_index !== undefined) payload.from_index = options.from_index;
+      if (options.to_index !== undefined) payload.to_index = options.to_index;
+    }
+
     return this.request<string>('/v1/player/control', {
       method: 'POST',
-      body: JSON.stringify({
-        guild_id: guildId,
-        action,
-        value: action === 'volume' ? value : undefined
-      })
+      body: JSON.stringify(payload)
     });
   }
 
@@ -298,13 +332,16 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * Modifies advanced DSP parameters (Mid/Side 3D spatial widening, crossfeed, exciter).
+   * Modifies advanced DSP parameters (Mid/Side 3D spatial widening, crossfeed, exciter, modulation, loudness, timescale).
    */
   public async setDsp(
     guildId: string,
     options: {
       preset?: string;
       spatial?: SpatialSettings;
+      modulation?: ModulationSettings;
+      loudness?: LoudnessSettings;
+      timescale?: TimescaleSettings;
       bands?: BandSetting[];
     }
   ): Promise<DspResponse> {
@@ -314,6 +351,9 @@ export class Node extends EventEmitter {
         guild_id: guildId,
         preset: options.preset,
         spatial: options.spatial,
+        modulation: options.modulation,
+        loudness: options.loudness,
+        timescale: options.timescale,
         bands: options.bands
       })
     });

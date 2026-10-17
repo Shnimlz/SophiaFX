@@ -2,7 +2,6 @@
 
 <img alt="SophiaFX" src="assets/img/logo.svg">
 
-
 **Cliente y orquestador TypeScript, ultraligero y de alto rendimiento, para los motores de audio de Discord [axAudio](https://github.com/Shnimlz/axAudio).**
 
 [![npm version](https://img.shields.io/npm/v/sophiafx.svg?style=flat&color=3178c6)](https://www.npmjs.com/package/sophiafx)
@@ -89,9 +88,7 @@ sophia.on("trackEnd", (player, track, reason) => {
 });
 
 sophia.on("trackError", (player, track, error) => {
-  console.error(
-    `[Guild ${player.guildId}] Error en ${track?.title}: ${error}`,
-  );
+  console.error(`[Guild ${player.guildId}] Error en ${track?.title}: ${error}`);
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -158,27 +155,90 @@ axAudio incluye procesamiento digital de señal (DSP) de grado profesional a 48 
 
 ### Presets calibrados
 
-| Preset | Uso recomendado |
-| --- | --- |
-| `music` | Escucha general de música |
-| `cinema-3d` | Películas y contenido con sensación envolvente |
-| `bass-boost-3d` | Énfasis en graves con ensanchamiento espacial |
-| `vocal-clarity` | Voces, podcasts y streams hablados |
-| `gaming-3d` | Posicionamiento espacial para juegos |
-| `concert-hall` | Ambiente de sala de conciertos |
-| `flat` | Respuesta plana y transparente |
+| Preset          | Uso recomendado                                |
+| --------------- | ---------------------------------------------- |
+| `music`         | Escucha general de música                      |
+| `cinema-3d`     | Películas y contenido con sensación envolvente |
+| `bass-boost-3d` | Énfasis en graves con ensanchamiento espacial  |
+| `vocal-clarity` | Voces, podcasts y streams hablados             |
+| `gaming-3d`     | Posicionamiento espacial para juegos           |
+| `concert-hall`  | Ambiente de sala de conciertos                 |
+| `nightcore`     | Aceleración de tempo y tono (+25%) y EQ V-Shape|
+| `vaporwave`     | Desaceleración analógica (-18%) y campo amplio |
+| `8d`            | Rotación orbital 3D continua a 0.15 Hz         |
+| `tremolo`       | Modulación de amplitud cálida a 4.5 Hz         |
+| `vibrato`       | Modulación de frecuencia de tono a 5.0 Hz      |
+| `broadcast`     | Sonoridad normalizada a -14 LUFS (EBU R128)    |
+| `flat`          | Respuesta plana y transparente                 |
 
 ```typescript
 await player.setPreset("cinema-3d");
+await player.setPreset("nightcore");
+```
+
+### Controles avanzados de reproducción
+
+```typescript
+// Salto a posición específica (seek en segundos)
+await player.seek(90); // Salta al minuto 1:30
+
+// Modo de repetición ('off' | 'track' | 'queue')
+await player.setLoop('track');
+
+// Mezcla aleatoria de la cola
+await player.shuffle();
+
+// Eliminar pista de la cola por índice
+await player.removeTrack(2);
+
+// Reordenar pista dentro de la cola
+await player.moveTrack(3, 1);
+```
+
+### Timescale (Velocidad y Pitch independientes)
+
+```typescript
+// Aceleración/desaceleración y tono con remuestreador Hermite y WSOLA
+await player.setTimescale({
+  speed: 1.25, // Tempo más rápido sin alterar el tono
+  pitch: 1.0,  // Tono neutro
+});
+
+// O directamente mediante helpers
+await player.setSpeed(1.20);
+await player.setPitch(1.10);
+```
+
+### Normalización de volumen perceptual (EBU R128)
+
+```typescript
+// Control automático de ganancia y limitador True-Peak
+await player.setLoudness({
+  enabled: true,
+  target_lufs: -14.0, // Nivel objetivo broadcast
+  max_gain_db: 9.0,
+  min_gain_db: -12.0,
+});
+```
+
+### Modulación dinámica y 8D Audio
+
+```typescript
+// Rotación orbital espacial 8D continua
+await player.setRotation(true, 0.15); // 0.15 Hz
+
+// Modulación Tremolo / Vibrato
+await player.setTremolo(true, 4.5, 0.55);
+await player.setVibrato(true, 5.0, 0.35);
 ```
 
 ### Ecualizador gráfico de 15 bandas
 
 Las bandas usan las frecuencias centrales estándar ISO:
 
-| Banda | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hz | 25 | 40 | 63 | 100 | 160 | 250 | 400 | 630 | 1k | 1.6k | 2.5k | 4k | 6.3k | 10k | 16k |
+| Banda | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9    | 10   | 11  | 12   | 13  | 14  |
+| ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---- | ---- | --- | ---- | --- | --- |
+| Hz    | 25  | 40  | 63  | 100 | 160 | 250 | 400 | 630 | 1k  | 1.6k | 2.5k | 4k  | 6.3k | 10k | 16k |
 
 ```typescript
 await player.setEqualizer([
@@ -232,12 +292,12 @@ console.log(`URL directa del CDN: ${resolved.stream_url}`);
 
 SophiaFX emite los eventos del cluster y de la telemetría de axAudio (`/v1/events`):
 
-| Evento | Argumentos | Descripción |
-| --- | --- | --- |
-| `ready` | `nodeName` | Un nodo se conectó y está listo |
-| `trackStart` | `player, track` | Empezó una pista |
-| `trackEnd` | `player, track, reason` | Terminó una pista, con el motivo |
-| `trackError` | `player, track, error` | Falló la reproducción de una pista |
+| Evento       | Argumentos              | Descripción                        |
+| ------------ | ----------------------- | ---------------------------------- |
+| `ready`      | `nodeName`              | Un nodo se conectó y está listo    |
+| `trackStart` | `player, track`         | Empezó una pista                   |
+| `trackEnd`   | `player, track, reason` | Terminó una pista, con el motivo   |
+| `trackError` | `player, track, error`  | Falló la reproducción de una pista |
 
 ## Raw Connector
 

@@ -13,6 +13,12 @@ export type NodeOptions = {
   url: string;
 
   /**
+   * Optional authentication password for secured axAudio nodes (AXAUDIO_PASSWORD).
+   * Forwarded as 'x-axaudio-password' header in HTTP requests and '?password=' query on WebSocket.
+   */
+  password?: string;
+
+  /**
    * Automatically attempt reconnection if the WebSocket connection drops.
    * @default true
    */

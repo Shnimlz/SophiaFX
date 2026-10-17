@@ -55,6 +55,112 @@ export type SpatialSettings = {
 };
 
 /**
+ * Dynamic spatial modulation and modulation effects (8D Orbital Rotation, Tremolo, Vibrato).
+ */
+export type ModulationSettings = {
+  /**
+   * Continuous 8D orbital spatial rotation around the listener.
+   * @default false
+   */
+  rotation?: boolean;
+
+  /**
+   * Orbital rotation cycle speed in Hz (0.01 to 2.0 Hz).
+   * @default 0.15
+   */
+  rotation_speed_hz?: number;
+
+  /**
+   * Amplitude modulation tremolo effect.
+   * @default false
+   */
+  tremolo?: boolean;
+
+  /**
+   * Tremolo LFO frequency in Hz (0.1 to 20.0 Hz).
+   * @default 4.0
+   */
+  tremolo_freq_hz?: number;
+
+  /**
+   * Tremolo depth factor (0.0 to 1.0).
+   * @default 0.5
+   */
+  tremolo_depth?: number;
+
+  /**
+   * Frequency modulation vibrato effect.
+   * @default false
+   */
+  vibrato?: boolean;
+
+  /**
+   * Vibrato LFO frequency in Hz (0.1 to 14.0 Hz).
+   * @default 5.0
+   */
+  vibrato_freq_hz?: number;
+
+  /**
+   * Vibrato pitch depth factor (0.0 to 1.0).
+   * @default 0.3
+   */
+  vibrato_depth?: number;
+};
+
+/**
+ * Perceptual loudness normalization parameters conforming to EBU R128 / ITU-R BS.1770-4.
+ */
+export type LoudnessSettings = {
+  /**
+   * Enables smooth perceptual loudness normalization across varying audio sources.
+   * @default false
+   */
+  enabled?: boolean;
+
+  /**
+   * Target integrated loudness in LUFS (-24.0 to -8.0 LUFS).
+   * Standard broadcast: -14.0 LUFS.
+   * @default -14.0
+   */
+  target_lufs?: number;
+
+  /**
+   * Maximum amplification boost in dB (+3.0 to +15.0 dB).
+   * @default 9.0
+   */
+  max_gain_db?: number;
+
+  /**
+   * Maximum attenuation cut in dB (-24.0 to -3.0 dB).
+   * @default -12.0
+   */
+  min_gain_db?: number;
+};
+
+/**
+ * Real-time independent tempo-stretching, pitch-shifting and resampling rate settings.
+ */
+export type TimescaleSettings = {
+  /**
+   * Playback speed multiplier (pitch-neutral time stretch, 0.25 to 4.0).
+   * @default 1.0
+   */
+  speed?: number;
+
+  /**
+   * Pitch multiplier (tempo-neutral pitch shift, 0.25 to 4.0).
+   * @default 1.0
+   */
+  pitch?: number;
+
+  /**
+   * Combined rate multiplier (analog speed + pitch resampling, 0.25 to 4.0).
+   * @default 1.0
+   */
+  rate?: number;
+};
+
+/**
  * Pre-calibrated studio acoustic presets in axAudio.
  */
 export type PresetName =
@@ -64,6 +170,12 @@ export type PresetName =
   | 'vocal-clarity'
   | 'gaming-3d'
   | 'concert-hall'
+  | 'nightcore'
+  | 'vaporwave'
+  | '8d'
+  | 'tremolo'
+  | 'vibrato'
+  | 'broadcast'
   | 'flat';
 
 /**
@@ -75,12 +187,24 @@ export type DspStatus = {
   binaural_crossfeed: boolean;
   bass_exciter: boolean;
   eq_bands: number[];
+  rotation: boolean;
+  rotation_speed_hz: number;
+  tremolo: boolean;
+  vibrato: boolean;
+  loudness: boolean;
+  target_lufs: number;
+  speed: number;
+  pitch: number;
+  rate: number;
 };
 
 export type DspPayload = {
   guild_id: string;
   preset?: string | null;
   spatial?: SpatialSettings | null;
+  modulation?: ModulationSettings | null;
+  loudness?: LoudnessSettings | null;
+  timescale?: TimescaleSettings | null;
   bands?: BandSetting[] | null;
 };
 

@@ -6,8 +6,12 @@ import type {
   PlayOptions,
   PlayResponse,
   QueueResponse,
+  LoopMode,
   BandSetting,
   SpatialSettings,
+  ModulationSettings,
+  LoudnessSettings,
+  TimescaleSettings,
   DspStatus,
   DspResponse,
   PresetName
@@ -53,6 +57,8 @@ export class Player extends EventEmitter {
   public volume = 1.0;
   public current: Track | null = null;
   public queue: Track[] = [];
+  public loopMode: LoopMode = 'off';
+  public currentPositionSecs: number | null = null;
   public dspStatus: DspStatus | null = null;
 
   // Pending voice handshake state
@@ -216,6 +222,44 @@ export class Player extends EventEmitter {
   }
 
   /**
+   * Seeks to a specific playback timestamp in seconds within the active track.
+   */
+  public async seek(positionSecs: number): Promise<void> {
+    const pos = Math.max(0.0, positionSecs);
+    await this.node.control(this.guildId, 'seek', { position_secs: pos });
+    this.currentPositionSecs = pos;
+  }
+
+  /**
+   * Sets the queue or track repeat mode ('off', 'track', 'queue').
+   */
+  public async setLoop(mode: LoopMode): Promise<void> {
+    await this.node.control(this.guildId, 'loop', { mode });
+    this.loopMode = mode;
+  }
+
+  /**
+   * Shuffles pending tracks in the queue randomly.
+   */
+  public async shuffle(): Promise<void> {
+    await this.node.control(this.guildId, 'shuffle');
+  }
+
+  /**
+   * Removes a specific track from the queue by its 0-based index.
+   */
+  public async removeTrack(index: number): Promise<void> {
+    await this.node.control(this.guildId, 'remove', { index });
+  }
+
+  /**
+   * Reorders a track from one index position to another.
+   */
+  public async moveTrack(fromIndex: number, toIndex: number): Promise<void> {
+    await this.node.control(this.guildId, 'move', { from_index: fromIndex, to_index: toIndex });
+  }
+
+  /**
    * Clears pending queued tracks while preserving the currently playing track.
    */
   public async clearQueue(): Promise<void> {
@@ -240,12 +284,14 @@ export class Player extends EventEmitter {
     this.isPlaying = res.is_playing;
     this.current = res.current;
     this.queue = res.queue;
+    this.currentPositionSecs = res.current_position_secs ?? null;
+    this.loopMode = res.loop_mode ?? 'off';
 
     return res;
   }
 
   /**
-   * Applies a calibrated acoustic preset (e.g. 'music', 'cinema-3d', 'bass-boost-3d').
+   * Applies a calibrated acoustic preset (e.g. 'music', 'cinema-3d', 'bass-boost-3d', 'nightcore', 'vaporwave', '8d').
    */
   public async setPreset(preset: PresetName): Promise<DspResponse> {
     const res = await this.node.setEq(this.guildId, undefined, preset);
@@ -275,7 +321,72 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Resets the equalizer and spatializer to transparent (flat) response.
+   * Configures dynamic spatial modulation effects (8D Orbital Rotation, Tremolo, Vibrato).
+   */
+  public async setModulation(modulation: ModulationSettings): Promise<DspResponse> {
+    const res = await this.node.setDsp(this.guildId, { modulation });
+    this.dspStatus = res.status;
+
+    return res;
+  }
+
+  /**
+   * Configures continuous 8D orbital spatial panning around the listener.
+   */
+  public async setRotation(enabled: boolean, speedHz = 0.15): Promise<DspResponse> {
+    return this.setModulation({ rotation: enabled, rotation_speed_hz: speedHz });
+  }
+
+  /**
+   * Configures amplitude modulation tremolo effect.
+   */
+  public async setTremolo(enabled: boolean, freqHz = 4.5, depth = 0.55): Promise<DspResponse> {
+    return this.setModulation({ tremolo: enabled, tremolo_freq_hz: freqHz, tremolo_depth: depth });
+  }
+
+  /**
+   * Configures frequency modulation vibrato effect.
+   */
+  public async setVibrato(enabled: boolean, freqHz = 5.0, depth = 0.35): Promise<DspResponse> {
+    return this.setModulation({ vibrato: enabled, vibrato_freq_hz: freqHz, vibrato_depth: depth });
+  }
+
+  /**
+   * Configures EBU R128 perceptual loudness normalization.
+   */
+  public async setLoudness(loudness: LoudnessSettings): Promise<DspResponse> {
+    const res = await this.node.setDsp(this.guildId, { loudness });
+    this.dspStatus = res.status;
+
+    return res;
+  }
+
+  /**
+   * Configures real-time independent tempo-stretching and pitch-shifting (Timescale).
+   */
+  public async setTimescale(timescale: TimescaleSettings): Promise<DspResponse> {
+    const res = await this.node.setDsp(this.guildId, { timescale });
+    this.dspStatus = res.status;
+
+    return res;
+  }
+
+  /**
+   * Sets playback speed multiplier (pitch-neutral time-stretch, 0.25 to 4.0).
+   */
+  public async setSpeed(speed: number): Promise<DspResponse> {
+    return this.setTimescale({ speed });
+  }
+
+  /**
+   * Sets pitch multiplier (tempo-neutral pitch-shift, 0.25 to 4.0).
+   */
+  public async setPitch(pitch: number): Promise<DspResponse> {
+    return this.setTimescale({ pitch });
+  }
+
+  /**
+   * Resets the equalizer, spatializer, modulation, loudness and timescale to flat response.
    */
   public async resetDsp(): Promise<DspResponse> {
     return this.setPreset('flat');
