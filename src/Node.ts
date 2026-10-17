@@ -79,7 +79,13 @@ export class Node extends EventEmitter {
     this.cleanupSocket();
 
     try {
-      this.ws = new WebSocket(this.wsUrl);
+      const wsHeaders: Record<string, string> = {};
+      if (this.options.password) {
+        wsHeaders['Authorization'] = this.options.password;
+        wsHeaders['x-axaudio-password'] = this.options.password;
+      }
+
+      this.ws = new WebSocket(this.wsUrl, { headers: wsHeaders });
 
       this.ws.on('open', () => {
         this.connected = true;
