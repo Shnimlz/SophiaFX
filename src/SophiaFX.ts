@@ -36,6 +36,7 @@ export type JoinVoiceOptions = {
   selfMute?: boolean;
   selfDeaf?: boolean;
   timeoutMs?: number;
+  force?: boolean;
 };
 
 /**
@@ -191,15 +192,16 @@ export class SophiaFX extends EventEmitter {
    */
   public async join(options: JoinVoiceOptions): Promise<Player> {
     const existingPlayer = this.players.get(options.guildId);
-    if (existingPlayer && existingPlayer.channelId === options.channelId) {
+    if (existingPlayer && existingPlayer.channelId === options.channelId && !options.force) {
       return existingPlayer;
     }
 
-    const player = this.createPlayer(options.guildId, options.nodeName);
+    const player = existingPlayer ?? this.createPlayer(options.guildId, options.nodeName);
     await player.connect(options.channelId, {
       selfMute: options.selfMute,
       selfDeaf: options.selfDeaf,
-      timeoutMs: options.timeoutMs
+      timeoutMs: options.timeoutMs,
+      force: options.force
     });
 
     return player;

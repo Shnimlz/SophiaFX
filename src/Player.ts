@@ -27,6 +27,14 @@ export type ConnectOptions = {
   selfMute?: boolean;
   selfDeaf?: boolean;
   timeoutMs?: number;
+  force?: boolean;
+};
+
+export type CachedVoiceInfo = {
+  channelId: string;
+  sessionId: string;
+  token: string;
+  endpoint: string;
 };
 
 type PendingVoiceInfo = {
@@ -64,6 +72,7 @@ export class Player extends EventEmitter {
 
   // Pending voice handshake state
   private pendingVoiceHandshake: PendingHandshakeState | null = null;
+  private lastVoiceInfo: CachedVoiceInfo | null = null;
 
   constructor(sophia: SophiaFX, node: Node, guildId: string) {
     super();
@@ -76,9 +85,18 @@ export class Player extends EventEmitter {
    * Connects the player to a Discord voice channel using the gateway and Songbird driver.
    */
   public async connect(channelId: string, options: ConnectOptions = {}): Promise<void> {
-    // If the player is already connected to this channel, preserve the active stream
-    if (this.channelId === channelId) {
+    // If the player is already connected to this channel, preserve the active stream unless forced
+    if (this.channelId === channelId && !options.force) {
       return;
+    }
+
+    if (this.channelId && options.force) {
+      this.channelId = null;
+      this.lastVoiceInfo = null;
+      try {
+        this.sophia.connector.sendVoiceUpdate(this.guildId, null, false, false);
+      } catch {}
+      await new Promise((r) => setTimeout(r, 150));
     }
 
     const timeoutMs = options.timeoutMs ?? 15000;
@@ -119,6 +137,12 @@ export class Player extends EventEmitter {
       user_id: botId
     });
 
+    this.lastVoiceInfo = {
+      channelId,
+      sessionId: voiceInfo.sessionId,
+      token: voiceInfo.token,
+      endpoint: voiceInfo.endpoint
+    };
     this.channelId = channelId;
   }
 
@@ -177,15 +201,54 @@ export class Player extends EventEmitter {
    * Enqueues and plays a song or playlist in axAudio.
    */
   public async play(url: string, options: PlayOptions = {}): Promise<PlayResponse> {
-    const res = await this.node.play(this.guildId, url, options);
-    this.isPlaying = true;
-    this.isPaused = false;
+    try {
+      const res = await this.node.play(this.guildId, url, options);
+      this.isPlaying = true;
+      this.isPaused = false;
 
-    if (options.volume !== undefined) {
-      this.volume = options.volume;
+      if (options.volume !== undefined) {
+        this.volume = options.volume;
+      }
+
+      return res;
+    } catch (err: any) {
+      // Auto-heal: If axAudio restarted or lost voice connection for this guild ("No hay conexión de voz activa" / "join"),
+      // and we have cached voice credentials, seamlessly re-forward them to axAudio and retry play once.
+      const errMsg = String(err?.message || err);
+      const isVoiceMissing =
+        errMsg.includes('No hay conexión de voz activa') ||
+        errMsg.includes('/v1/voice/join') ||
+        errMsg.includes('voice connection') ||
+        err?.status === 404;
+
+      if (isVoiceMissing && this.lastVoiceInfo) {
+        try {
+          const botId = this.sophia.connector.getBotId();
+          await this.node.joinVoice({
+            guild_id: this.guildId,
+            channel_id: this.lastVoiceInfo.channelId,
+            session_id: this.lastVoiceInfo.sessionId,
+            token: this.lastVoiceInfo.token,
+            endpoint: this.lastVoiceInfo.endpoint,
+            user_id: botId
+          });
+
+          const res = await this.node.play(this.guildId, url, options);
+          this.isPlaying = true;
+          this.isPaused = false;
+
+          if (options.volume !== undefined) {
+            this.volume = options.volume;
+          }
+
+          return res;
+        } catch {
+          throw err;
+        }
+      }
+
+      throw err;
     }
-
-    return res;
   }
 
   /**
@@ -416,6 +479,7 @@ export class Player extends EventEmitter {
     } catch {}
 
     this.channelId = null;
+    this.lastVoiceInfo = null;
     this.isPlaying = false;
     this.isPaused = false;
     this.current = null;
