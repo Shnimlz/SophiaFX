@@ -23,6 +23,8 @@ export type FlatPlaylistItem = {
 
 /**
  * Options for enqueueing or playing an audio track or playlist in axAudio.
+ * Supports YouTube (videos/playlists), Spotify (tracks/albums/playlists),
+ * SoundCloud, and direct streams.
  */
 export type PlayOptions = {
   /**

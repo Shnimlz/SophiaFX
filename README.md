@@ -18,7 +18,10 @@ Una alternativa moderna y con tipado seguro a Shoukaku, diseñada para el pipeli
 ## Características
 
 - **Hecho a medida para axAudio**: bindings directos al plano de control REST y al driver Songbird RTP a 50 Hz.
+- **Soporte nativo de Spotify (Zero-Config)**: resuelve URLs de pistas, álbumes y playlists de Spotify (`open.spotify.com`, `spotify:...`) sin requerir API keys ni Client Secret de Spotify.
+- **SponsorBlock y prefetch integrados**: omisión automática en tiempo real de segmentos no musicales (`music_offtopic`) y prefetching anticipado de 10-15s para transiciones de audio fluidas (gapless).
 - **DSP de estudio y ecualizador de 15 bandas**: ecualización en tiempo real, ensanchamiento espacial Mid/Side con coherencia de fase, crossfeed acústico y exciter de sub-graves.
+- **Resiliencia de conexión y Garbage Collector**: sincronización tolerante al recolector de inactividad de axAudio (`AXAUDIO_IDLE_TIMEOUT_SECS`), auto-heal de voz y mitigación de errores 403 Forbidden de CDN.
 - **Clustering multinodo con failover automático**: varios nodos axAudio distribuidos, ruteo al nodo con menor carga y migración transparente de reproductores cuando un nodo cae.
 - **Conectores intercambiables**: `DiscordJSConnector` (Discord.js v14+) y `RawConnector` (agnóstico, ideal para microservicios, RabbitMQ o Kafka).
 - **Telemetría en tiempo real**: suscripción WebSocket a `/v1/events` con keep-alive, ping/pong y reconexión con backoff.
@@ -191,8 +194,11 @@ await player.shuffle();
 // Eliminar pista de la cola por índice
 await player.removeTrack(2);
 
-// Reordenar pista dentro de la cola
+// Reordenar pista dentro de la cola (cross-queue Songbird/playlists)
 await player.moveTrack(3, 1);
+
+// Modo Autoplay con recomendaciones automáticas de InnerTube (sin sobrecarga de yt-dlp)
+await player.setAutoplay(true);
 ```
 
 ### Timescale (Velocidad y Pitch independientes)
@@ -281,11 +287,16 @@ for (const track of results.tracks) {
   console.log(`${track.title} - ${track.url} (${track.duration_secs}s)`);
 }
 
-// Metadatos de una URL y resolución del stream directo del CDN
-const resolved = await sophia.resolve(
+// Resolución directa de YouTube o Spotify (sin requerir credenciales de Spotify)
+const youtubeTrack = await sophia.resolve(
   "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 );
-console.log(`URL directa del CDN: ${resolved.stream_url}`);
+console.log(`URL directa del CDN: ${youtubeTrack.stream_url}`);
+
+const spotifyTrack = await sophia.resolve(
+  "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+);
+console.log(`Spotify resuelto a YouTube: ${spotifyTrack.title} (${spotifyTrack.stream_url})`);
 ```
 
 ## Eventos

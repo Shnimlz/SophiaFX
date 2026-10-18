@@ -199,6 +199,9 @@ export class Player extends EventEmitter {
 
   /**
    * Enqueues and plays a song or playlist in axAudio.
+   * Supports YouTube (videos/playlists), Spotify (tracks/albums/playlists),
+   * SoundCloud, and direct streams. Automatically skips non-music segments
+   * via SponsorBlock and seamlessly pre-fetches upcoming tracks.
    */
   public async play(url: string, options: PlayOptions = {}): Promise<PlayResponse> {
     try {
@@ -208,6 +211,10 @@ export class Player extends EventEmitter {
 
       if (options.volume !== undefined) {
         this.volume = options.volume;
+      }
+
+      if (res.was_empty || !this.current) {
+        this.current = res;
       }
 
       return res;
@@ -239,6 +246,10 @@ export class Player extends EventEmitter {
 
           if (options.volume !== undefined) {
             this.volume = options.volume;
+          }
+
+          if (res.was_empty || !this.current) {
+            this.current = res;
           }
 
           return res;
@@ -342,17 +353,42 @@ export class Player extends EventEmitter {
 
   /**
    * Queries the synchronized queue state from axAudio.
+   * If axAudio's Garbage Collector has cleaned up an inactive player,
+   * gracefully synchronizes local player state and returns an empty queue.
    */
   public async getQueue(): Promise<QueueResponse> {
-    const res = await this.node.getQueue(this.guildId);
-    this.isPlaying = res.is_playing;
-    this.current = res.current;
-    this.queue = res.queue;
-    this.currentPositionSecs = res.current_position_secs ?? null;
-    this.loopMode = res.loop_mode ?? 'off';
-    this.autoplay = res.autoplay ?? false;
+    try {
+      const res = await this.node.getQueue(this.guildId);
+      this.isPlaying = res.is_playing;
+      this.current = res.current;
+      this.queue = res.queue;
+      this.currentPositionSecs = res.current_position_secs ?? null;
+      this.loopMode = res.loop_mode ?? 'off';
+      this.autoplay = res.autoplay ?? false;
 
-    return res;
+      return res;
+    } catch (err: any) {
+      const errMsg = String(err?.message || err);
+      if (err?.status === 404 || errMsg.includes('No hay reproductor de voz activo')) {
+        this.isPlaying = false;
+        this.current = null;
+        this.queue = [];
+        this.currentPositionSecs = null;
+
+        return {
+          guild_id: this.guildId,
+          is_playing: false,
+          current: null,
+          current_position_secs: null,
+          loop_mode: this.loopMode,
+          autoplay: this.autoplay,
+          queue: [],
+          total_tracks: 0
+        };
+      }
+
+      throw err;
+    }
   }
 
   /**

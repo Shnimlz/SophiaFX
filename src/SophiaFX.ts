@@ -240,6 +240,7 @@ export class SophiaFX extends EventEmitter {
 
   /**
    * Resolves a single track URL directly without enqueuing it.
+   * Supports YouTube, Spotify (tracks, albums, playlists), and direct streams.
    */
   public async resolve(query: string, options: Partial<PlayOptions> = {}): Promise<Track> {
     const node = this.getNode();

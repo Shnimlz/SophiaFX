@@ -274,3 +274,126 @@ test('Player executes modulation, loudness and timescale DSP controls', async ()
 
   sophia.destroy();
 });
+
+test('Node.request attaches HTTP status code to error on non-ok response', async () => {
+  const node = new Node({
+    name: 'err-node',
+    url: 'http://127.0.0.1:2333'
+  });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: false,
+    status: 404,
+    json: async () => ({
+      success: false,
+      data: null,
+      message: 'No hay reproductor de voz activo para este servidor'
+    })
+  });
+
+  try {
+    await assert.rejects(
+      async () => {
+        await node.request('/v1/player/queue', { method: 'POST' });
+      },
+      (err) => {
+        assert.equal(err.status, 404);
+        assert.equal(err.message, 'No hay reproductor de voz activo para este servidor');
+        return true;
+      }
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    node.destroy();
+  }
+});
+
+test('Player.getQueue returns empty queue gracefully on 404 / inactive player from axAudio Idle GC', async () => {
+  const connector = new RawConnector({
+    botId: '123',
+    sendVoiceUpdate: () => {}
+  });
+
+  const sophia = new SophiaFX(connector, [
+    {
+      name: 'test-node',
+      url: 'http://127.0.0.1:2333',
+      autoReconnect: false
+    }
+  ]);
+
+  const node = sophia.nodes.get('test-node');
+  node.getQueue = async () => {
+    const err = new Error('No hay reproductor de voz activo para este servidor');
+    err.status = 404;
+    throw err;
+  };
+
+  const player = sophia.createPlayer('guild_gc', 'test-node');
+  player.isPlaying = true;
+  player.current = {
+    title: 'Old Track',
+    source_url: 'https://youtube.com/watch?v=123',
+    stream_url: 'http://stream',
+    duration_secs: 180,
+    author: 'Artist',
+    thumbnail: null
+  };
+  player.queue = [player.current];
+
+  const q = await player.getQueue();
+  assert.equal(q.is_playing, false);
+  assert.equal(q.current, null);
+  assert.deepEqual(q.queue, []);
+  assert.equal(q.total_tracks, 0);
+  assert.equal(player.isPlaying, false);
+  assert.equal(player.current, null);
+  assert.deepEqual(player.queue, []);
+
+  sophia.destroy();
+});
+
+test('Player.play immediately sets current track when was_empty is true', async () => {
+  const connector = new RawConnector({
+    botId: '123',
+    sendVoiceUpdate: () => {}
+  });
+
+  const sophia = new SophiaFX(connector, [
+    {
+      name: 'test-node',
+      url: 'http://127.0.0.1:2333',
+      autoReconnect: false
+    }
+  ]);
+
+  const node = sophia.nodes.get('test-node');
+  const trackResponse = {
+    title: 'Test Song',
+    source_url: 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT',
+    stream_url: 'http://cdn/stream',
+    duration_secs: 210,
+    author: 'Spotify Artist',
+    thumbnail: 'https://i.scdn.co/image/abc',
+    is_playlist: false,
+    playlist_title: null,
+    playlist_tracks_count: 1,
+    queue_length: 1,
+    was_empty: true
+  };
+
+  node.play = async () => trackResponse;
+
+  const player = sophia.createPlayer('guild_play', 'test-node');
+  assert.equal(player.current, null);
+
+  const res = await player.play('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT');
+  assert.equal(res.was_empty, true);
+  assert.equal(player.isPlaying, true);
+  assert.equal(player.current?.title, 'Test Song');
+  assert.equal(player.current?.source_url, 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT');
+
+  sophia.destroy();
+});
+

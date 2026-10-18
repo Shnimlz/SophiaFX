@@ -18,7 +18,10 @@ A modern, type-safe alternative to Shoukaku, designed for axAudio's native Rust 
 ## Features
 
 - **Purpose-Built for axAudio**: Direct native bindings to axAudio's REST control plane and 50 Hz RTP Songbird driver.
+- **Native Spotify Support (Zero-Config)**: Seamlessly resolves Spotify tracks, albums, and playlists (`open.spotify.com`, `spotify:...`) without requiring Spotify API keys or developer credentials.
+- **Server-Side SponsorBlock & Prefetch**: Real-time automatic skipping of non-music segments (`music_offtopic`) and 10-15s anticipatory prefetching for gapless audio transitions.
 - **Studio DSP & 15-Band Equalizer**: Real-time equalization, phase-coherent Mid/Side 3D spatial widening, acoustic crossfeed, and sub-bass harmonic exciter.
+- **Connection Resilience & Idle GC**: Graceful synchronization with axAudio's idle Garbage Collector (`AXAUDIO_IDLE_TIMEOUT_SECS`), automated voice auto-healing, and CDN 403 retry handling.
 - **Multi-Node Clustering & Auto-Failover**: Support for multiple distributed axAudio nodes, least-loaded automatic routing, and seamless player migration upon node drop.
 - **Pluggable Connectors**: `DiscordJSConnector` (Discord.js v14+) and `RawConnector` (agnostic, ideal for microservices, RabbitMQ, or Kafka).
 - **Real-Time Telemetry**: WebSocket subscriber for `/v1/events` with automated keep-alive, ping/pong, and reconnection backoff.
@@ -220,11 +223,16 @@ for (const track of results.tracks) {
   console.log(`${track.title} - ${track.url} (${track.duration_secs}s)`);
 }
 
-// Extract URL metadata and resolve direct CDN stream
-const resolved = await sophia.resolve(
+// Extract URL metadata and resolve direct CDN stream (YouTube or Spotify without credentials)
+const youtubeTrack = await sophia.resolve(
   "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 );
-console.log(`Direct CDN stream URL: ${resolved.stream_url}`);
+console.log(`Direct CDN stream URL: ${youtubeTrack.stream_url}`);
+
+const spotifyTrack = await sophia.resolve(
+  "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+);
+console.log(`Spotify mapped stream: ${spotifyTrack.title} (${spotifyTrack.stream_url})`);
 ```
 
 ## Events

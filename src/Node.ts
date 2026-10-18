@@ -214,7 +214,11 @@ export class Node extends EventEmitter {
       }))) as ApiResponse<T>;
 
       if (!res.ok || !body.success) {
-        throw new Error(body.message || `axAudio request failed with status ${res.status}`);
+        const error = new Error(body.message || `axAudio request failed with status ${res.status}`) as Error & {
+          status?: number;
+        };
+        error.status = res.status;
+        throw error;
       }
 
       // SAFETY: when body.success is true, data contains payload of type T
@@ -263,6 +267,8 @@ export class Node extends EventEmitter {
 
   /**
    * Enqueues and plays a track or playlist URL in axAudio.
+   * Supports YouTube (videos/playlists), Spotify (tracks/albums/playlists),
+   * SoundCloud, and direct streams. SponsorBlock and prefetching are handled automatically.
    */
   public async play(guildId: string, url: string, options: PlayOptions = {}): Promise<PlayResponse> {
     return this.request<PlayResponse>('/v1/player/play', {
@@ -379,6 +385,7 @@ export class Node extends EventEmitter {
 
   /**
    * Resolves track metadata and audio CDN stream for a URL without enqueueing.
+   * Supports YouTube, Spotify (tracks, albums, playlists), and direct streams.
    */
   public async resolveTrack(query: string, options: Partial<PlayOptions> = {}): Promise<Track> {
     return this.request<Track>('/v1/tracks/resolve', {
