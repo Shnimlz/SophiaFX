@@ -1,6 +1,6 @@
 {
   "name": "sophiafx",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "description": "Ultra-lightweight, high-performance TypeScript client and orchestrator for axAudio Discord voice engines.",
   "type": "module",
   "main": "./dist/index.js",
